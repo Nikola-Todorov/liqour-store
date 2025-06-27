@@ -531,13 +531,153 @@ footer {
             background: #f39c12;
         }
 
-        @media (max-width: 768px) {
-            .products-grid {
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 20px;
-            }
-            
-            .section-title {
-                font-size: 2rem;
-            }
-        }
+      /* Large tablets */
+@media (min-width: 769px) and (max-width: 1024px) {
+    .nav-container {
+        padding: 0.25rem 0.7rem;
+        min-height: 40px;
+    }
+    
+    .logo-section img {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .logo {
+        font-size: 0.95rem;
+    }
+    
+    .menu-toggle span {
+        width: 16px;
+    }
+}
+
+/* Tablets and small laptops */
+@media (min-width: 641px) and (max-width: 768px) {
+    .nav-container {
+        padding: 0.2rem 0.6rem;
+        min-height: 36px;
+    }
+    
+    .logo-section img {
+        width: 26px;
+        height: 26px;
+    }
+    
+    .logo {
+        font-size: 0.9rem;
+    }
+}
+
+/* Mobile phones */
+@media (max-width: 640px) {
+    .nav-container {
+        padding: 0.15rem 0.4rem;
+        min-height: 32px;
+    }
+    
+    .logo-section img {
+        width: 22px;
+        height: 22px;
+    }
+    
+    .logo {
+        font-size: 0.75rem;
+    }
+    
+    .menu-toggle {
+        width: 22px;
+        height: 22px;
+    }
+    
+    .menu-toggle span {
+        width: 12px;
+        height: 1.5px;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+    .nav-container {
+        padding: 0.1rem 0.3rem;
+        min-height: 30px;
+    }
+    
+    .logo-section {
+        gap: 0.2rem;
+    }
+    
+    .logo-section img {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .logo {
+        font-size: 0.7rem;
+    }
+    
+    .menu-toggle {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .menu-toggle span {
+        width: 11px;
+        height: 1px;
+    }
+}
+
+/* Ultra-compact for very small screens */
+@media (max-width: 360px) {
+    .nav-container {
+        padding: 0.08rem 0.25rem;
+        min-height: 28px;
+    }
+    
+    .logo-section img {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .logo {
+        font-size: 0.65rem;
+    }
+    
+    .menu-toggle {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .menu-toggle span {
+        width: 10px;
+        height: 1px;
+    }
+    
+    nav a {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.75rem;
+    }
+}
+
+/* Ensure body content doesn't hide behind navbar */
+body {
+    padding-top: 32px; /* Match mobile navbar height */
+}
+
+@media (min-width: 641px) {
+    body {
+        padding-top: 36px;
+    }
+}
+
+@media (min-width: 769px) {
+    body {
+        padding-top: 40px;
+    }
+}
+
+@media (min-width: 1025px) {
+    body {
+        padding-top: 50px;
+    }
+}
