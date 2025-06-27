@@ -7,6 +7,7 @@
     <title>Домашна Аптека - Премиум продавница</title>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <link rel="stylesheet" href="style.css">
+    <script src="script.js"></script>
 </head>
 
 <body>
@@ -270,7 +271,7 @@
                     <input type="text" id="address" placeholder="Адреса" required>
                     <input type="tel" id="phone" placeholder="Телефонски број" required>
                     <textarea id="message" placeholder="Што би сакале да нарачате?" required></textarea>
-                    <button type="submit" id="submitBtn">Направи Нарачка</button>
+                    <button type="submit" id="submitBtn" onclick="sendMail()">Направи Нарачка</button>
                 </form>
             </div>
 
