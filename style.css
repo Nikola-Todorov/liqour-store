@@ -86,7 +86,7 @@ nav a.active {
     justify-content: center;
     text-align: center;
     color: white;
-    background: url(.Domasnav2/domasna_apteka/back_photo_index.jpg);
+    background: url(./Domasnav2/domasna_apteka/back_photo_index.jpg);
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
@@ -154,7 +154,7 @@ section {
 }
 
 .about-image {
-    background: url(.Domasnav2/domasna_apteka/daci_jak.jpg);
+    background: url(./Domasnav2/domasna_apteka/daci_jak.jpg);
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover;
