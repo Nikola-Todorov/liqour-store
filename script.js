@@ -1,179 +1,94 @@
-// // Wait for DOM to be fully loaded
-// document.addEventListener("DOMContentLoaded", function () {
+// Helpers
+const $ = (sel, ctx=document) => ctx.querySelector(sel);
+const $$ = (sel, ctx=document) => [...ctx.querySelectorAll(sel)];
 
-//     // Initialize EmailJS
-//     emailjs.init("bJosCOZyzldOZC6UP");
+document.addEventListener('DOMContentLoaded', () => {
+  // ===== Mobile nav toggle =====
+  const toggle = $('#navToggle');
+  const menu = $('#navMenu');
+  if (toggle && menu){
+    const closeMenu = () => { menu.classList.remove('show'); toggle.setAttribute('aria-expanded','false'); };
+    toggle.addEventListener('click', () => {
+      const shown = menu.classList.toggle('show');
+      toggle.setAttribute('aria-expanded', String(shown));
+    });
+    // close on link click / outside / ESC
+    menu.addEventListener('click', e => { if (e.target.tagName === 'A') closeMenu(); });
+    document.addEventListener('click', e => { if (!menu.contains(e.target) && !toggle.contains(e.target)) closeMenu(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+  }
 
-//     // Form submission handler
-//     document.getElementById('contactForm').addEventListener('submit', function (e) {
-//         e.preventDefault();
+  // ===== Smooth active link (IntersectionObserver) =====
+  const sections = $$('section, header[id]');
+  const links = $$('#navMenu a');
+  const byId = id => links.find(a => a.getAttribute('href') === '#' + id);
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting){
+        links.forEach(a => a.classList.remove('active'));
+        const a = byId(entry.target.id); if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-60% 0px -35% 0px', threshold: 0 });
+  sections.forEach(s => s.id && io.observe(s));
 
-//         // Collect form data
-//         const params = {
-//             name: document.getElementById("name").value,
-//             surname: document.getElementById("surname").value,
-//             city: document.getElementById("city").value,
-//             address: document.getElementById("address").value,
-//             phone: document.getElementById("phone").value,
-//             message: document.getElementById("message").value
-//         };
+  // ===== Hero background carousel (respects reduced motion) =====
+  const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hero = document.querySelector('.hero');
+  const backgrounds = [
+    "url('domasna_apteka/back_photo_index.jpg')",
+    "url('domasna_apteka/daci_jak.jpg')",
+    "url('domasna_apteka/oreovka_headline.jpg')"
+  ];
+  if (hero && !prefersReduce && backgrounds.length > 1){
+    let i = 0;
+    setInterval(() => {
+      i = (i + 1) % backgrounds.length;
+      hero.style.backgroundImage = backgrounds[i];
+    }, 5000);
+  }
 
-//         // Send email
-//         emailjs.send("service_9tggop8", "template_nf17cbd", params)
-//             .then(function (response) {
-//                 console.log("SUCCESS!", response.status, response.text);
-//                 document.getElementById("successMessage").style.display = "block";
-//                 document.getElementById('contactForm').reset();
-//                 setTimeout(() => {
-//                     document.getElementById("successMessage").style.display = "none";
-//                 }, 5000);
-//             }, function (error) {
-//                 console.log("FAILED...", error);
-//                 alert("Failed to send message.");
-//             });
-//     });
+  // ===== EmailJS init =====
+  if (window.emailjs){
+    emailjs.init({ publicKey: 'bJosCOZyzldOZC6UP' });
+  }
 
-//     // Smooth scrolling for nav links
-//     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-//         anchor.addEventListener('click', function (e) {
-//             e.preventDefault();
-//             const target = document.querySelector(this.getAttribute('href'));
-//             if (target) {
-//                 target.scrollIntoView({
-//                     behavior: 'smooth',
-//                     block: 'start'
-//                 });
-//             }
-//         });
-//     });
+  // ===== Form submit with validation =====
+  const form = $('#contactForm');
+  const submitBtn = $('#submitBtn');
+  const ok = $('#successMessage');
+  const err = $('#errorMessage');
 
-//     // Active link highlight on scroll
-//     window.addEventListener('scroll', () => {
-//         const sections = document.querySelectorAll('section');
-//         const navLinks = document.querySelectorAll('nav ul li a');
-//         let current = '';
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!window.emailjs){ err.textContent = '❌ Привремена грешка. Обидете се подоцна.'; err.classList.add('show'); return; }
 
-//         sections.forEach(section => {
-//             const sectionTop = section.offsetTop;
-//             if (scrollY >= sectionTop - 200) {
-//                 current = section.getAttribute('id');
-//             }
-//         });
+    if (!form.checkValidity()){
+      form.reportValidity();
+      return;
+    }
 
-//         navLinks.forEach(link => {
-//             link.classList.remove('active');
-//             if (link.getAttribute('href') === '#' + current) {
-//                 link.classList.add('active');
-//             }
-//         });
-//     });
+    const params = {
+      from_name: $('#name')?.value?.trim(),
+      from_surname: $('#surname')?.value?.trim(),
+      from_city: $('#city')?.value?.trim(),
+      from_address: $('#address')?.value?.trim(),
+      from_phone: $('#phone')?.value?.trim(),
+      message: $('#message')?.value?.trim(),
+      to_email: 'aptekadomasna@yahoo.com'
+    };
 
-// });
- 
-
-
-        const hero = document.querySelector('.hero');
-
-        const backgrounds = [
-            'url("domasna_apteka/back_photo_index.jpg")',
-            'url("domasna_apteka/daci_jak.jpg")',
-            'url("domasna_apteka/oreovka_headline.jpg")'
-        ];
-
-        let index = 0;
-
-        setInterval(() => {
-            index = (index + 1) % backgrounds.length;
-            hero.style.backgroundImage = backgrounds[index];
-        }, 5000); // every 5 seconds
-
-
-
-
-
-
-
-        // Initialize EmailJS
-        (function () {
-            emailjs.init({
-                publicKey: "bJosCOZyzldOZC6UP", // Replace with your actual public key
-            });
-        })();
-
-        // Form submission function
-        function sendMail() {
-            const form = document.getElementById('contactForm');
-            const submitBtn = document.getElementById('submitBtn');
-            const successMessage = document.getElementById('successMessage');
-            const errorMessage = document.getElementById('errorMessage');
-
-            // Get form data
-            const templateParams = {
-                from_name: document.getElementById('name').value,
-                from_surname: document.getElementById('surname').value,
-                from_city: document.getElementById('city').value,
-                from_address: document.getElementById('address').value,
-                from_phone: document.getElementById('phone').value,
-                message: document.getElementById('message').value,
-                to_email: 'aptekadomasna@yahoo.com'
-            };
-
-            // Show loading state
-            submitBtn.innerHTML = 'Се испраќа...';
-            submitBtn.disabled = true;
-            form.classList.add('loading');
-
-            // Hide previous messages
-            successMessage.classList.remove('show');
-            errorMessage.classList.remove('show');
-
-            // Send email using EmailJS
-            emailjs.send(
-                'service_9tggop8', // Replace with your EmailJS service ID
-                'template_4mrx4wu', // Replace with your EmailJS template ID
-                templateParams
-            ).then(function (response) {
-                console.log('SUCCESS!', response.status, response.text);
-
-                // Show success message
-                successMessage.classList.add('show');
-                form.reset();
-
-                // Reset button
-                submitBtn.innerHTML = 'Направи Нарачка';
-                submitBtn.disabled = false;
-                form.classList.remove('loading');
-
-            }, function (error) {
-                console.log('FAILED...', error);
-
-                // Show error message
-                errorMessage.classList.add('show');
-
-                // Reset button
-                submitBtn.innerHTML = 'Направи Нарачка';
-                submitBtn.disabled = false;
-                form.classList.remove('loading');
-            });
-        }
-
-        // Form submit event listener
-        document.getElementById('contactForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            sendMail();
-        });
-
-        // Smooth scrolling for navigation links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-    
+    try{
+      submitBtn.disabled = true; submitBtn.textContent = 'Се испраќа…';
+      err.classList.remove('show'); ok.classList.remove('show');
+      await emailjs.send('service_9tggop8','template_4mrx4wu', params);
+      ok.classList.add('show'); form.reset();
+    }catch(e2){
+      console.error('EmailJS error', e2);
+      err.textContent = '❌ Грешка при испраќање. Ве молиме обидете се повторно.';
+      err.classList.add('show');
+    }finally{
+      submitBtn.disabled = false; submitBtn.textContent = 'Направи Нарачка';
+    }
+  });
+});
