@@ -81,7 +81,7 @@ section{padding-block:clamp(48px,6vw,80px)}
 .hero{
   min-height:100svh;display:grid;place-items:center;text-align:center;color:#fff;
   position:relative;isolation:isolate;
-  background:url('Domasnav2/domasna_apteka/back_photo_index.jpg') center/cover no-repeat
+  background:url('domasna_apteka/back_photo_index.jpg') center/cover no-repeat
 }
 .hero::before{
   content:"";position:absolute;inset:0;z-index:-1;
@@ -97,7 +97,7 @@ section{padding-block:clamp(48px,6vw,80px)}
 .about p{color:var(--muted);font-size:clamp(15px,1.8vw,18px)}
 .about-img{
   min-height:240px;border-radius:var(--radius);
-  background:url('Domasnav2/domasna_apteka/daci_jak.jpg') center/cover no-repeat;
+  background:url('domasna_apteka/daci_jak.jpg') center/cover no-repeat;
   display:grid;place-items:center;color:#fff;font-weight:700;box-shadow:var(--shadow)
 }
 @media (min-width: 900px){
