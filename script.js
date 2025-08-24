@@ -36,9 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const prefersReduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const hero = document.querySelector('.hero');
   const backgrounds = [
-    "url('domasna_apteka/back_photo_index.jpg')",
-    "url('domasna_apteka/daci_jak.jpg')",
-    "url('domasna_apteka/oreovka_headline.jpg')"
+    "url('Domasnav2/domasna_apteka/back_photo_index.jpg')",
+    "url('Domasnav2/domasna_apteka/daci_jak.jpg')",
+    "url('Domasnav2/domasna_apteka/oreovka_headline.jpg')"
   ];
   if (hero && !prefersReduce && backgrounds.length > 1){
     let i = 0;
@@ -92,3 +92,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
