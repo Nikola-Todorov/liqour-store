@@ -4,10 +4,14 @@ const SUPABASE_URL  = 'https://oictkykqxzjqaaraxiwc.supabase.co/rest/v1/';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pY3RreWtxeHpqcWFhcmF4aXdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NDQzNjQsImV4cCI6MjA5NzAyMDM2NH0.UedRaA7Ak7tQ7UiCT0VOZK_wb00YxuCcnDBkXrTpP6M';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
+// ─── XSS sanitizer ────────────────────────────────────────────
+const S = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+
 // ─── State ────────────────────────────────────────────────────
 const State = {
   products: [],
-  filters: { query: '', sort: 'default', inStockOnly: false },
+  filters: { query: '', sort: 'default', category: 'all', inStockOnly: false },
 };
 
 // ─── Cart (localStorage-backed) ───────────────────────────────
@@ -25,26 +29,23 @@ const Cart = (() => {
     _items[product.id] = { product, qty: Math.min(existing + qty, product.stock) };
     persist();
   };
-
-  const remove = (id) => { delete _items[id]; persist(); };
-
-  const setQty = (id, qty) => {
+  const remove  = (id)      => { delete _items[id]; persist(); };
+  const setQty  = (id, qty) => {
     if (!_items[id]) return;
     const clamped = Math.max(0, Math.min(qty, _items[id].product.stock));
     if (clamped === 0) delete _items[id]; else _items[id].qty = clamped;
     persist();
   };
-
-  const getQty = (id) => _items[id]?.qty || 0;
-  const total  = ()   => Object.values(_items).reduce((s, { product: p, qty }) => s + p.price * qty, 0);
-  const count  = ()   => Object.values(_items).reduce((s, { qty }) => s + qty, 0);
-  const all    = ()   => Object.values(_items);
-  const clear  = ()   => { _items = {}; persist(); };
+  const getQty  = (id) => _items[id]?.qty || 0;
+  const total   = ()   => Object.values(_items).reduce((s, { product: p, qty }) => s + p.price * qty, 0);
+  const count   = ()   => Object.values(_items).reduce((s, { qty }) => s + qty, 0);
+  const all     = ()   => Object.values(_items);
+  const clear   = ()   => { _items = {}; persist(); };
 
   return { load, add, remove, setQty, getQty, total, count, all, clear };
 })();
 
-// ─── API layer ────────────────────────────────────────────────
+// ─── API ──────────────────────────────────────────────────────
 const API = {
   _cache: null,
 
@@ -80,9 +81,20 @@ const API = {
     }
     return order;
   },
+
+  async lookupOrders(phone) {
+    const { data, error } = await sb
+      .from('orders')
+      .select('id,name,surname,status,created_at,total_amount,order_items(product_name,quantity)')
+      .eq('phone', phone)
+      .order('created_at', { ascending: false })
+      .limit(5);
+    if (error) throw error;
+    return data || [];
+  },
 };
 
-// ─── UI rendering ─────────────────────────────────────────────
+// ─── UI ───────────────────────────────────────────────────────
 const UI = {
   renderSkeletons(container, n = 6) {
     container.innerHTML = Array.from({ length: n }, () => `
@@ -98,46 +110,75 @@ const UI = {
   },
 
   _buildCard(p) {
-    const out = p.stock <= 0;
-    const low = p.stock > 0 && p.stock <= 5;
+    const out   = p.stock <= 0;
+    const low   = p.stock > 0 && p.stock <= 5;
+    const vLow  = p.stock > 0 && p.stock <= 2;
+    // Stock bar: only for low stock (≤ 10)
+    const showBar = p.stock > 0 && p.stock <= 10;
+    const barPct  = showBar ? Math.round((p.stock / 10) * 100) : 0;
+
     const art = document.createElement('article');
-    art.className  = 'card';
+    art.className = 'card';
     art.dataset.id = p.id;
-    art.innerHTML  = `
-      ${p.badge ? `<div class="badge badge--${p.badge === 'Ново' ? 'new' : 'sale'}">${p.badge}</div>` : ''}
+    if (p.category) art.dataset.category = p.category;
+
+    art.innerHTML = `
+      ${p.badge ? `<div class="badge badge--${p.badge === 'Ново' ? 'new' : 'sale'}">${S(p.badge)}</div>` : ''}
       ${out ? `<div class="badge badge--out">Нема залиха</div>` : ''}
-      <div class="media">
-        <img src="${p.image_url || ''}" alt="${p.name}" loading="lazy" decoding="async"
-             onerror="this.src='';this.removeAttribute('src')" />
+      <div class="media" data-id="${S(p.id)}">
+        <img src="${S(p.image_url || '')}"
+             alt="${S(p.name)}" loading="lazy" decoding="async"
+             onerror="this.closest('.media').classList.add('img-failed');this.remove()" />
       </div>
       <div class="body">
-        <h3>${p.name}</h3>
-        ${p.description ? `<p class="muted">${p.description}</p>` : ''}
-        ${low ? `<p class="stock-warn">Само ${p.stock} остана!</p>` : ''}
-        <div class="price"><small>од </small>${p.price.toLocaleString('mk-MK')} ${p.unit || 'ден'}</div>
+        <h3>${S(p.name)}</h3>
+        ${p.description ? `<p class="muted">${S(p.description)}</p>` : ''}
+        ${vLow ? `<p class="stock-warn stock-warn--urgent">🔴 Само ${p.stock} шише остана!</p>` : ''}
+        ${low && !vLow ? `<p class="stock-warn">⚠️ Само ${p.stock} остана!</p>` : ''}
+        ${showBar ? `
+          <div class="stock-bar" role="meter" aria-valuenow="${p.stock}" aria-valuemin="0" aria-valuemax="10" aria-label="Залиха">
+            <div class="stock-bar__fill stock-bar__fill--${vLow ? 'low' : 'med'}" style="width:${barPct}%"></div>
+          </div>` : ''}
+        <div class="price">
+          <small>од </small>${p.price.toLocaleString('mk-MK')} <small>${S(p.unit || 'ден')}</small>
+        </div>
         <div class="card-actions">
-          <div class="qty-control" role="group" aria-label="Количина за ${p.name}">
-            <button class="qty-btn" data-action="qty-dec" data-id="${p.id}" data-stock="${p.stock}"
+          <div class="qty-control" role="group" aria-label="Количина за ${S(p.name)}">
+            <button class="qty-btn" data-action="qty-dec" data-id="${S(p.id)}" data-stock="${p.stock}"
               aria-label="Намали количина" ${out ? 'disabled' : ''}>−</button>
-            <output class="qty-display" id="qty-${p.id}">0</output>
-            <button class="qty-btn" data-action="qty-inc" data-id="${p.id}" data-stock="${p.stock}"
+            <output class="qty-display" id="qty-${S(p.id)}">0</output>
+            <button class="qty-btn" data-action="qty-inc" data-id="${S(p.id)}" data-stock="${p.stock}"
               aria-label="Зголеми количина" ${out ? 'disabled' : ''}>+</button>
           </div>
           <button class="btn-add${out ? ' btn-add--disabled' : ''}"
-            data-action="add-to-cart" data-id="${p.id}"
+            data-action="add-to-cart" data-id="${S(p.id)}"
             ${out ? 'disabled aria-disabled="true"' : ''}>
-            Додај во кошничка
+            ${out ? 'Нема залиха' : '🛒 Додај'}
           </button>
         </div>
       </div>`;
     return art;
   },
 
+  renderCategoryTabs(products) {
+    const el = document.getElementById('categoryTabs');
+    if (!el) return;
+    const cats = [...new Set(products.map(p => p.category).filter(Boolean))];
+    if (!cats.length) { el.hidden = true; return; }
+    el.hidden = false;
+    el.innerHTML = ['all', ...cats].map(c => `
+      <button class="cat-tab${c === State.filters.category ? ' cat-tab--active' : ''}"
+        data-category="${S(c)}" role="tab" aria-selected="${c === State.filters.category}">
+        ${c === 'all' ? 'Сите' : S(c)}
+      </button>`).join('');
+  },
+
   renderProducts() {
     const grid = document.getElementById('productsGrid');
-    let list   = [...State.products];
-    const { query, sort, inStockOnly } = State.filters;
+    let list = [...State.products];
+    const { query, sort, category, inStockOnly } = State.filters;
 
+    if (category !== 'all') list = list.filter(p => p.category === category);
     if (query) {
       const q = query.toLowerCase();
       list = list.filter(p =>
@@ -157,40 +198,41 @@ const UI = {
     list.forEach(p => frag.appendChild(this._buildCard(p)));
     grid.innerHTML = '';
     grid.appendChild(frag);
-    // Sync qty displays with cart
     list.forEach(p => {
       const qty = Cart.getQty(p.id);
-      if (qty > 0) {
-        const el = document.getElementById('qty-' + p.id);
-        if (el) el.textContent = qty;
-      }
+      if (qty > 0) { const el = document.getElementById('qty-' + p.id); if (el) el.textContent = qty; }
     });
   },
 
   renderCartDrawer() {
-    const list       = document.getElementById('cartItems');
-    const items      = Cart.all();
+    const list      = document.getElementById('cartItems');
+    const items     = Cart.all();
     const checkoutBtn = document.getElementById('cartCheckoutBtn');
 
     if (!items.length) {
-      list.innerHTML = '<p class="cart-empty">Кошничката е празна.</p>';
+      list.innerHTML = `
+        <div class="cart-empty-state">
+          <p class="cart-empty-icon">🛒</p>
+          <p class="cart-empty">Кошничката е празна.</p>
+          <p style="color:var(--muted);font-size:.85rem;text-align:center">Додај производи за да нарачаш.</p>
+        </div>`;
       document.getElementById('cartTotal').textContent = '0 ден';
       if (checkoutBtn) checkoutBtn.disabled = true;
       return;
     }
 
     list.innerHTML = items.map(({ product: p, qty }) => `
-      <div class="cart-item" data-id="${p.id}">
+      <div class="cart-item" data-id="${S(p.id)}">
         <div class="ci-top">
-          <span class="ci-name">${p.name}</span>
-          <button class="ci-remove" data-action="cart-remove" data-id="${p.id}"
-            aria-label="Отстрани ${p.name}">✕</button>
+          <span class="ci-name">${S(p.name)}</span>
+          <button class="ci-remove" data-action="cart-remove" data-id="${S(p.id)}"
+            aria-label="Отстрани ${S(p.name)}">✕</button>
         </div>
         <div class="ci-bottom">
           <div class="ci-qty-ctrl" role="group" aria-label="Количина">
-            <button class="ci-btn" data-action="cart-dec" data-id="${p.id}" aria-label="Намали">−</button>
+            <button class="ci-btn" data-action="cart-dec" data-id="${S(p.id)}" aria-label="Намали">−</button>
             <span class="ci-qty">${qty}</span>
-            <button class="ci-btn" data-action="cart-inc" data-id="${p.id}" aria-label="Зголеми">+</button>
+            <button class="ci-btn" data-action="cart-inc" data-id="${S(p.id)}" aria-label="Зголеми">+</button>
           </div>
           <span class="ci-subtotal">${(p.price * qty).toLocaleString('mk-MK')} ден</span>
         </div>
@@ -203,10 +245,7 @@ const UI = {
 
   updateCartBadge() {
     const n = Cart.count();
-    document.querySelectorAll('.cart-badge').forEach(b => {
-      b.textContent = n;
-      b.hidden = n === 0;
-    });
+    document.querySelectorAll('.cart-badge').forEach(b => { b.textContent = n; b.hidden = n === 0; });
   },
 
   toast(msg, type = 'success') {
@@ -237,10 +276,107 @@ const UI = {
   },
 };
 
-// ─── Cart drawer (focus trap + keyboard nav) ──────────────────
+// ─── Order confirmation screen ────────────────────────────────
+function showOrderConfirmation(formData, cartItems, total) {
+  const formSection = document.getElementById('formSection');
+  const confirmEl   = document.getElementById('orderConfirm');
+  if (!formSection || !confirmEl) return;
+
+  const waLines = cartItems.map(({ product: p, qty }) => `${p.name} ×${qty}`).join(', ');
+  const waMsg   = `Нова нарачка!\n${waLines}\nВкупно: ${total.toLocaleString('mk-MK')} ден\n${formData.name} ${formData.surname}, ${formData.city}\nТел: ${formData.phone}`;
+  const waUrl   = `https://wa.me/38972763044?text=${encodeURIComponent(waMsg)}`;
+
+  confirmEl.innerHTML = `
+    <div class="confirm-card">
+      <div class="confirm-icon">✅</div>
+      <h3>Нарачката е примена!</h3>
+      <p>Ќе ве контактираме на <strong>${S(formData.phone)}</strong> наскоро.</p>
+      <div class="confirm-items">
+        ${cartItems.map(({ product: p, qty }) => `
+          <div class="confirm-row">
+            <span>${S(p.name)} <small>×${qty}</small></span>
+            <span>${(p.price * qty).toLocaleString('mk-MK')} ден</span>
+          </div>`).join('')}
+        <div class="confirm-total">
+          <span>Вкупно</span>
+          <strong>${total.toLocaleString('mk-MK')} ден</strong>
+        </div>
+      </div>
+      <a href="${waUrl}" target="_blank" rel="noopener" class="btn-wa">
+        💬 Потврди преку WhatsApp
+      </a>
+      <button class="btn-order-again" id="orderAgainBtn">+ Нова нарачка</button>
+    </div>`;
+
+  formSection.hidden = true;
+  confirmEl.hidden   = false;
+  confirmEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  document.getElementById('orderAgainBtn')?.addEventListener('click', () => {
+    formSection.hidden = false;
+    confirmEl.hidden   = true;
+    formSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
+}
+
+// ─── Order status lookup ──────────────────────────────────────
+const STATUS_MAP = {
+  'нова':          { icon: '🕐', cls: 'status--new',       label: 'Нова' },
+  'во обработка':  { icon: '⚙️',  cls: 'status--proc',      label: 'Во обработка' },
+  'испратена':     { icon: '🚚', cls: 'status--shipped',   label: 'Испратена' },
+  'доставена':     { icon: '✅', cls: 'status--delivered', label: 'Доставена' },
+  'откажана':      { icon: '❌', cls: 'status--cancelled', label: 'Откажана' },
+};
+
+function initOrderStatus() {
+  const btn    = document.getElementById('statusLookupBtn');
+  const input  = document.getElementById('statusPhone');
+  const result = document.getElementById('statusResult');
+  if (!btn || !input || !result) return;
+
+  const lookup = async () => {
+    const phone = input.value.trim();
+    if (!phone) { input.focus(); return; }
+    btn.disabled = true;
+    btn.textContent = 'Пребарување…';
+    result.innerHTML = '<p class="status-loading">Пребарување…</p>';
+
+    try {
+      const orders = await API.lookupOrders(phone);
+      if (!orders.length) {
+        result.innerHTML = '<p class="status-empty">Нема нарачки за овој број.</p>';
+        return;
+      }
+      result.innerHTML = orders.map(o => {
+        const s    = STATUS_MAP[o.status] || { icon: '📋', cls: '', label: o.status };
+        const date = new Date(o.created_at).toLocaleDateString('mk-MK');
+        const items = (o.order_items || []).map(i => `${S(i.product_name)} ×${i.quantity}`).join(', ');
+        return `
+          <div class="status-card">
+            <div class="status-card__head">
+              <span class="status-pill ${s.cls}">${s.icon} ${s.label}</span>
+              <span class="status-date">${date}</span>
+            </div>
+            ${items ? `<p class="status-items">${items}</p>` : ''}
+            <p class="status-amt">${(o.total_amount || 0).toLocaleString('mk-MK')} ден</p>
+          </div>`;
+      }).join('');
+    } catch (err) {
+      console.error(err);
+      result.innerHTML = '<p class="status-empty">Грешка. Обидете се повторно.</p>';
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = 'Провери →';
+    }
+  };
+
+  btn.addEventListener('click', lookup);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') lookup(); });
+}
+
+// ─── Cart drawer (focus trap) ─────────────────────────────────
 const Drawer = (() => {
   let prevFocus = null;
-
   const drawerEl  = () => document.getElementById('cartDrawer');
   const overlayEl = () => document.getElementById('cartOverlay');
 
@@ -248,7 +384,7 @@ const Drawer = (() => {
     'button:not([disabled]),[href],input,[tabindex]:not([tabindex="-1"])'
   )].filter(el => !el.hidden);
 
-  const _onKey = (e) => {
+  const _onKey = e => {
     if (e.key === 'Escape') { close(); return; }
     if (e.key !== 'Tab') return;
     const all = _focusables();
@@ -281,7 +417,6 @@ const Drawer = (() => {
   };
 
   const toggle = () => drawerEl().classList.contains('open') ? close() : open();
-
   return { open, close, toggle };
 })();
 
@@ -291,14 +426,10 @@ function initNav() {
   const menu   = document.getElementById('navMenu');
   if (!toggle || !menu) return;
 
-  const closeMenu = () => {
-    menu.classList.remove('show');
-    toggle.setAttribute('aria-expanded', 'false');
-  };
-
-  toggle.addEventListener('click', () => {
-    toggle.setAttribute('aria-expanded', String(menu.classList.toggle('show')));
-  });
+  const closeMenu = () => { menu.classList.remove('show'); toggle.setAttribute('aria-expanded', 'false'); };
+  toggle.addEventListener('click', () =>
+    toggle.setAttribute('aria-expanded', String(menu.classList.toggle('show')))
+  );
   menu.addEventListener('click', e => { if (e.target.tagName === 'A') closeMenu(); });
   document.addEventListener('click', e => {
     if (window.innerWidth < 1024 && !menu.contains(e.target) && !toggle.contains(e.target)) closeMenu();
@@ -330,11 +461,9 @@ function initHeroCarousel() {
   IMAGES.slice(1).forEach(src => Object.assign(new Image(), { src }));
 
   let i = 0, prev = null;
-
   const swap = () => {
     i = (i + 1) % IMAGES.length;
-    const layer = document.createElement('div');
-    layer.className = 'hero-layer';
+    const layer = Object.assign(document.createElement('div'), { className: 'hero-layer' });
     layer.style.backgroundImage = `url('${IMAGES[i]}')`;
     hero.prepend(layer);
     requestAnimationFrame(() => requestAnimationFrame(() => layer.classList.add('hero-layer--in')));
@@ -347,7 +476,7 @@ function initHeroCarousel() {
   setInterval(swap, 6000);
 }
 
-// ─── Product filters ──────────────────────────────────────────
+// ─── Filters ──────────────────────────────────────────────────
 function initFilters() {
   let timer;
   document.getElementById('productSearch')?.addEventListener('input', e => {
@@ -355,16 +484,24 @@ function initFilters() {
     timer = setTimeout(() => { State.filters.query = e.target.value.trim(); UI.renderProducts(); }, 220);
   });
   document.getElementById('productSort')?.addEventListener('change', e => {
-    State.filters.sort = e.target.value;
-    UI.renderProducts();
+    State.filters.sort = e.target.value; UI.renderProducts();
   });
   document.getElementById('inStockOnly')?.addEventListener('change', e => {
-    State.filters.inStockOnly = e.target.checked;
+    State.filters.inStockOnly = e.target.checked; UI.renderProducts();
+  });
+  document.getElementById('categoryTabs')?.addEventListener('click', e => {
+    const btn = e.target.closest('.cat-tab');
+    if (!btn) return;
+    State.filters.category = btn.dataset.category;
+    document.querySelectorAll('.cat-tab').forEach(t => {
+      t.classList.toggle('cat-tab--active', t.dataset.category === State.filters.category);
+      t.setAttribute('aria-selected', t.dataset.category === State.filters.category);
+    });
     UI.renderProducts();
   });
 }
 
-// ─── Inline form validation ───────────────────────────────────
+// ─── Form validation ──────────────────────────────────────────
 function validateField(input) {
   const val = input.value.trim();
   let ok = !(input.required && !val);
@@ -380,15 +517,13 @@ function validateField(input) {
     input.after(hint);
   }
   hint.hidden      = ok;
-  hint.textContent = !val
-    ? 'Ова поле е задолжително'
-    : 'Внесете валиден телефонски број';
+  hint.textContent = !val ? 'Ова поле е задолжително' : 'Внесете валиден телефонски број';
   return ok;
 }
 
-// ─── Event delegation (zero inline handlers in HTML) ─────────
+// ─── Event delegation ─────────────────────────────────────────
 function initEvents() {
-  // Products grid: qty and add-to-cart
+  // Products grid
   document.getElementById('productsGrid')?.addEventListener('click', e => {
     const btn = e.target.closest('[data-action]');
     if (!btn || btn.disabled) return;
@@ -421,7 +556,6 @@ function initEvents() {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     const { action, id } = btn.dataset;
-
     if (action === 'cart-remove') {
       Cart.remove(id);
       UI.renderCartDrawer();
@@ -472,16 +606,16 @@ function initForm() {
     submitBtn.textContent = 'Се испраќа…';
 
     const g = id => form.querySelector('#' + id)?.value.trim() || '';
+    const formData = {
+      name: g('name'), surname: g('surname'),
+      city: g('city'), address: g('address'),
+      phone: g('phone'), message: g('message'),
+    };
+    const cartItems = Cart.all();
+    const total     = Cart.total();
+
     try {
-      await API.submitOrder(
-        {
-          name:    g('name'),    surname: g('surname'),
-          city:    g('city'),    address: g('address'),
-          phone:   g('phone'),   message: g('message'),
-        },
-        Cart.all()
-      );
-      UI.formFeedback('success', '✅ Ви Благодариме! Вашата нарачка е успешно испратена.');
+      await API.submitOrder(formData, cartItems);
       form.reset();
       form.querySelectorAll('.field--invalid, .field--valid').forEach(el =>
         el.classList.remove('field--invalid', 'field--valid')
@@ -491,13 +625,14 @@ function initForm() {
       UI.updateCartBadge();
       UI.renderCartDrawer();
       API.invalidate();
-      setTimeout(() => loadProducts(), 1500);
+      showOrderConfirmation(formData, cartItems, total);
+      setTimeout(() => loadProducts(), 2000);
     } catch (err) {
       console.error(err);
       UI.formFeedback('error', '❌ Грешка при испраќање. Ве молиме обидете се повторно.');
     } finally {
       submitBtn.disabled    = false;
-      submitBtn.textContent = 'Направи Нарачка';
+      submitBtn.textContent = '📦 Направи Нарачка';
     }
   });
 }
@@ -508,6 +643,7 @@ async function loadProducts() {
   if (!State.products.length) UI.renderSkeletons(grid);
   try {
     State.products = await API.fetchProducts();
+    UI.renderCategoryTabs(State.products);
     UI.renderProducts();
   } catch (err) {
     console.error(err);
@@ -517,8 +653,7 @@ async function loadProducts() {
         <button class="btn-retry" id="retryBtn">↻ Обиди се повторно</button>
       </div>`;
     document.getElementById('retryBtn')?.addEventListener('click', () => {
-      API.invalidate();
-      loadProducts();
+      API.invalidate(); loadProducts();
     });
   }
 }
@@ -532,5 +667,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initFilters();
   initEvents();
   initForm();
+  initOrderStatus();
   loadProducts();
 });

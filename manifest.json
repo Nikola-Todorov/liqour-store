@@ -1,0 +1,22 @@
+{
+  "name": "Домашна Аптека",
+  "short_name": "Дом. Аптека",
+  "description": "Домашни ликери и мед. Нарачај онлајн.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#667eea",
+  "lang": "mk",
+  "icons": [
+    {
+      "src": "Domasnav2/domasna_apteka/domasna_apteka_zeleno_logo.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "Domasnav2/domasna_apteka/domasna_apteka_zeleno_logo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
