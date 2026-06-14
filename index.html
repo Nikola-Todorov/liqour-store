@@ -8,286 +8,16 @@
   <meta name="description" content="Домашна Аптека – домашни ликери и мед од глуварче. Брза достава до вашиот дом." />
   <link rel="canonical" href="https://nikola-todorov.github.io/liqour-store/" />
 
-  <meta property="og:type" content="website" />
-  <meta property="og:locale" content="mk_MK" />
-  <meta property="og:title" content="Домашна Аптека - Премиум продавница" />
+  <meta property="og:type"        content="website" />
+  <meta property="og:locale"      content="mk_MK" />
+  <meta property="og:title"       content="Домашна Аптека - Премиум продавница" />
   <meta property="og:description" content="Домашни ликери, мед и подарочни сетови." />
-  <meta property="og:url" content="https://nikola-todorov.github.io/liqour-store/" />
-  <meta property="og:image" content="https://nikola-todorov.github.io/liqour-store/Domasnav2/domasna_apteka/og-cover.jpg" />
+  <meta property="og:url"         content="https://nikola-todorov.github.io/liqour-store/" />
+  <meta property="og:image"       content="https://nikola-todorov.github.io/liqour-store/Domasnav2/domasna_apteka/og-cover.jpg" />
 
-  <link rel="preload" as="image" href="Domasnav2/domasna_apteka/back_photo_index.jpg" fetchpriority="high">
+  <link rel="preload" as="image" href="Domasnav2/domasna_apteka/back_photo_index.jpg" fetchpriority="high" />
   <link rel="stylesheet" href="Domasnav2/style.css" />
 
-  <!-- ── Supabase JS ── -->
-  <!-- REPLACE the two YOUR_SUPABASE_* values below with your real project values -->
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
-    const SUPABASE_URL  = 'https://oictkykqxzjqaaraxiwc.supabase.co/rest/v1/';   // e.g. https://xxxx.supabase.co
-    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pY3RreWtxeHpqcWFhcmF4aXdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NDQzNjQsImV4cCI6MjA5NzAyMDM2NH0.UedRaA7Ak7tQ7UiCT0VOZK_wb00YxuCcnDBkXrTpP6M';
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
-
-    /* ── Cart state ─────────────────────────────────────────── */
-    const cart = {};   // { productId: { product, qty } }
-
-    /* ── Load & render products ─────────────────────────────── */
-    async function loadProducts() {
-      const grid = document.getElementById('productsGrid');
-      grid.innerHTML = '<p class="loading-msg">Се вчитуваат производите…</p>';
-
-      const { data: products, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('active', true)
-        .order('created_at');
-
-      if (error) {
-        grid.innerHTML = '<p class="loading-msg" style="color:red">Грешка при вчитување.</p>';
-        console.error(error);
-        return;
-      }
-
-      grid.innerHTML = '';
-      products.forEach(p => {
-        const outOfStock = p.stock <= 0;
-        const lowStock   = p.stock > 0 && p.stock <= 5;
-
-        const card = document.createElement('article');
-        card.className = 'card';
-        card.innerHTML = `
-          ${p.badge ? `<div class="badge ${p.badge === 'Ново' ? 'new' : 'sale'}">${p.badge}</div>` : ''}
-          ${outOfStock ? `<div class="badge" style="background:#888">Нема залиха</div>` : ''}
-          <div class="media">
-            <img src="${p.image_url || ''}" alt="${p.name}" loading="lazy" decoding="async"
-                 onerror="this.style.display='none'" />
-          </div>
-          <div class="body">
-            <h3>${p.name}</h3>
-            <p class="muted">${p.description || ''}</p>
-            ${lowStock ? `<p class="stock-warn">⚠️ Само ${p.stock} остана!</p>` : ''}
-            <div class="price"><small>од </small>${p.price.toLocaleString('mk-MK')} ${p.unit || 'ден'}</div>
-            <div class="card-actions">
-              <div class="qty-control">
-                <button class="qty-btn" onclick="changeQty('${p.id}', -1, ${p.stock})" ${outOfStock ? 'disabled' : ''}>−</button>
-                <span class="qty-display" id="qty-${p.id}">0</span>
-                <button class="qty-btn" onclick="changeQty('${p.id}', 1, ${p.stock})" ${outOfStock ? 'disabled' : ''}>+</button>
-              </div>
-              <button class="btn-add ${outOfStock ? 'disabled' : ''}"
-                onclick="addToCart('${p.id}', ${JSON.stringify(p.name).replace(/'/g,"&#39;")}, ${p.price}, ${p.stock})"
-                ${outOfStock ? 'disabled' : ''}>
-                🛒 Додај
-              </button>
-            </div>
-          </div>`;
-        grid.appendChild(card);
-      });
-
-      // store products in window for later lookup
-      window._products = Object.fromEntries(products.map(p => [p.id, p]));
-    }
-
-    /* ── Cart helpers ───────────────────────────────────────── */
-    window.changeQty = function(id, delta, stock) {
-      const cur = cart[id]?.qty || 0;
-      const next = Math.max(0, Math.min(cur + delta, stock));
-      if (cart[id]) cart[id].qty = next;
-      else if (next > 0 && window._products?.[id]) {
-        cart[id] = { product: window._products[id], qty: next };
-      }
-      document.getElementById('qty-' + id).textContent = next;
-    };
-
-    window.addToCart = function(id, name, price, stock) {
-      const qty = parseInt(document.getElementById('qty-' + id)?.textContent || '0');
-      if (qty < 1) return;
-      if (!cart[id]) cart[id] = { product: { id, name, price, stock }, qty };
-      else cart[id].qty = Math.min(cart[id].qty + qty, stock);
-      updateCartBadge();
-      showToast(`✅ ${name} додаден во кошничката`);
-    };
-
-    window.removeFromCart = function(id) {
-      delete cart[id];
-      renderCartDrawer();
-      updateCartBadge();
-    };
-
-    function updateCartBadge() {
-      const total = Object.values(cart).reduce((s, i) => s + i.qty, 0);
-      document.querySelectorAll('.cart-badge').forEach(b => {
-        b.textContent = total;
-        b.style.display = total > 0 ? 'inline-flex' : 'none';
-      });
-    }
-
-    function renderCartDrawer() {
-      const list = document.getElementById('cartItems');
-      const items = Object.values(cart);
-      if (!items.length) {
-        list.innerHTML = '<p class="cart-empty">Кошничката е празна.</p>';
-        document.getElementById('cartTotal').textContent = '0 ден';
-        return;
-      }
-      list.innerHTML = items.map(({ product: p, qty }) => `
-        <div class="cart-item">
-          <span class="ci-name">${p.name}</span>
-          <span class="ci-qty">${qty} × ${p.price.toLocaleString('mk-MK')} ден</span>
-          <button class="ci-remove" onclick="removeFromCart('${p.id}')">✕</button>
-        </div>`).join('');
-      const total = items.reduce((s, { product: p, qty }) => s + p.price * qty, 0);
-      document.getElementById('cartTotal').textContent = total.toLocaleString('mk-MK') + ' ден';
-    }
-
-    window.toggleCart = function() {
-      const d = document.getElementById('cartDrawer');
-      renderCartDrawer();
-      d.classList.toggle('open');
-    };
-
-    /* ── Submit order to Supabase ───────────────────────────── */
-    document.addEventListener('DOMContentLoaded', () => {
-      loadProducts();
-
-      document.getElementById('contactForm')?.addEventListener('submit', async e => {
-        e.preventDefault();
-        const btn = document.getElementById('submitBtn');
-        btn.disabled = true;
-        btn.textContent = 'Се испраќа…';
-
-        const items = Object.values(cart);
-        const total = items.reduce((s, { product: p, qty }) => s + p.price * qty, 0);
-
-        const formData = {
-          name:    document.getElementById('name').value.trim(),
-          surname: document.getElementById('surname').value.trim(),
-          city:    document.getElementById('city').value.trim(),
-          address: document.getElementById('address').value.trim(),
-          phone:   document.getElementById('phone').value.trim(),
-          message: document.getElementById('message').value.trim(),
-          total_amount: total > 0 ? total : null,
-        };
-
-        // 1. Insert order
-        const { data: order, error: orderErr } = await supabase
-          .from('orders')
-          .insert(formData)
-          .select()
-          .single();
-
-        if (orderErr) {
-          showAlert('errorMessage');
-          btn.disabled = false;
-          btn.textContent = 'Направи Нарачка';
-          return;
-        }
-
-        // 2. Insert order items (if cart has items)
-        if (items.length) {
-          const orderItems = items.map(({ product: p, qty }) => ({
-            order_id:     order.id,
-            product_id:   p.id,
-            product_name: p.name,
-            price:        p.price,
-            quantity:     qty,
-          }));
-          await supabase.from('order_items').insert(orderItems);
-
-          // 3. Decrement stock
-          for (const { product: p, qty } of items) {
-            await supabase.rpc('decrement_stock', { product_id: p.id, amount: qty });
-          }
-        }
-
-        showAlert('successMessage');
-        e.target.reset();
-        Object.keys(cart).forEach(k => delete cart[k]);
-        updateCartBadge();
-        renderCartDrawer();
-        btn.disabled = false;
-        btn.textContent = 'Направи Нарачка';
-        setTimeout(() => loadProducts(), 1000); // refresh stock
-      });
-    });
-
-    function showAlert(id) {
-      ['successMessage','errorMessage'].forEach(i => {
-        document.getElementById(i).style.display = 'none';
-      });
-      const el = document.getElementById(id);
-      el.style.display = 'block';
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(() => el.style.display = 'none', 6000);
-    }
-
-    function showToast(msg) {
-      let t = document.getElementById('toast');
-      if (!t) {
-        t = document.createElement('div');
-        t.id = 'toast';
-        document.body.appendChild(t);
-      }
-      t.textContent = msg;
-      t.className = 'toast show';
-      clearTimeout(t._timer);
-      t._timer = setTimeout(() => t.className = 'toast', 3000);
-    }
-  </script>
-
-  <style>
-    /* ── Inline additions (non-destructive) ── */
-    .loading-msg { text-align:center; padding:2rem; color:#888; }
-    .stock-warn  { color:#d97706; font-size:.85rem; margin:.25rem 0; }
-    .card-actions{ display:flex; align-items:center; gap:.5rem; margin-top:.75rem; flex-wrap:wrap; }
-    .qty-control { display:flex; align-items:center; gap:.4rem; }
-    .qty-btn     { width:28px; height:28px; border:1.5px solid #bbb; background:#fff;
-                   border-radius:50%; font-size:1rem; cursor:pointer; line-height:1;
-                   transition:background .15s; }
-    .qty-btn:hover:not(:disabled) { background:#f0f0f0; }
-    .qty-display { min-width:20px; text-align:center; font-weight:600; }
-    .btn-add     { padding:.4rem .9rem; background:var(--clr-accent,#2d6a4f); color:#fff;
-                   border:none; border-radius:6px; cursor:pointer; font-size:.85rem;
-                   transition:opacity .15s; }
-    .btn-add.disabled { opacity:.45; cursor:not-allowed; }
-
-    /* ── Cart drawer ── */
-    .cart-fab    { position:fixed; top:14px; right:16px; z-index:1100;
-                   background:var(--clr-accent,#2d6a4f); color:#fff;
-                   border:none; border-radius:50px; padding:.5rem 1rem;
-                   font-size:.95rem; cursor:pointer; display:flex; align-items:center; gap:.4rem; }
-    .cart-badge  { background:#e63946; color:#fff; border-radius:50%;
-                   width:18px; height:18px; font-size:.7rem;
-                   display:none; align-items:center; justify-content:center; }
-    .cart-drawer { position:fixed; right:0; top:0; bottom:0; width:min(360px,100vw);
-                   background:#fff; box-shadow:-4px 0 24px #0002; z-index:1200;
-                   transform:translateX(110%); transition:transform .3s ease;
-                   display:flex; flex-direction:column; padding:1.5rem; gap:1rem; }
-    .cart-drawer.open { transform:translateX(0); }
-    .cart-drawer h3  { margin:0; font-size:1.1rem; }
-    .cart-close  { background:none; border:none; font-size:1.4rem; cursor:pointer;
-                   margin-left:auto; }
-    .cart-item   { display:flex; align-items:center; gap:.5rem; padding:.5rem 0;
-                   border-bottom:1px solid #eee; }
-    .ci-name     { flex:1; font-size:.9rem; }
-    .ci-qty      { font-size:.85rem; color:#555; white-space:nowrap; }
-    .ci-remove   { background:none; border:none; color:#999; cursor:pointer; font-size:.9rem; }
-    .cart-total  { display:flex; justify-content:space-between; font-weight:700;
-                   padding-top:.5rem; }
-    .cart-checkout{ background:var(--clr-accent,#2d6a4f); color:#fff; border:none;
-                    border-radius:8px; padding:.75rem; width:100%; font-size:1rem;
-                    cursor:pointer; }
-    .cart-empty  { color:#999; text-align:center; padding:1rem 0; }
-    #cartItems   { flex:1; overflow-y:auto; }
-
-    /* ── Toast ── */
-    .toast       { position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
-                   background:#222; color:#fff; padding:.6rem 1.2rem; border-radius:8px;
-                   opacity:0; transition:all .3s; pointer-events:none; z-index:1300;
-                   white-space:nowrap; }
-    .toast.show  { opacity:1; transform:translateX(-50%) translateY(0); }
-  </style>
-
-  <!-- Structured data -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -307,52 +37,70 @@
 <body>
   <a class="skip-link" href="#home">Прескокни до содржина</a>
 
+  <!-- Toast container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Cart overlay (click to close) -->
+  <div class="cart-overlay" id="cartOverlay" aria-hidden="true"></div>
+
   <!-- Cart FAB -->
-  <button class="cart-fab" onclick="toggleCart()" aria-label="Кошничка">
-    🛒 Кошничка <span class="cart-badge" id="cartBadge1">0</span>
+  <button class="cart-fab" id="cartFab" aria-label="Отвори кошничка" aria-haspopup="dialog">
+    🛒 Кошничка
+    <span class="cart-badge" id="cartBadge1" hidden>0</span>
   </button>
 
   <!-- Cart Drawer -->
-  <div class="cart-drawer" id="cartDrawer" role="dialog" aria-label="Кошничка">
-    <div style="display:flex;align-items:center">
-      <h3>🛒 Кошничка</h3>
-      <button class="cart-close" onclick="toggleCart()">✕</button>
+  <div class="cart-drawer" id="cartDrawer"
+       role="dialog" aria-modal="true" aria-label="Кошничка" aria-hidden="true">
+    <div class="cart-header">
+      <h2 class="cart-title">🛒 Кошничка</h2>
+      <button class="cart-close" id="cartClose" aria-label="Затвори кошничка">✕</button>
     </div>
-    <div id="cartItems"><p class="cart-empty">Кошничката е празна.</p></div>
-    <div class="cart-total">
-      <span>Вкупно:</span>
-      <span id="cartTotal">0 ден</span>
+    <div id="cartItems" class="cart-items">
+      <p class="cart-empty">Кошничката е празна.</p>
     </div>
-    <button class="cart-checkout" onclick="toggleCart(); document.getElementById('order').scrollIntoView({behavior:'smooth'})">
-      Продолжи кон нарачка →
-    </button>
+    <div class="cart-footer">
+      <div class="cart-total">
+        <span>Вкупно:</span>
+        <strong id="cartTotal">0 ден</strong>
+      </div>
+      <button class="cart-checkout" id="cartCheckoutBtn" disabled>
+        Продолжи кон нарачка →
+      </button>
+    </div>
   </div>
 
-  <!-- ========= Navbar ========= -->
+  <!-- ═══════════ Navbar ═══════════ -->
   <nav class="navbar" aria-label="Главна навигација">
     <div class="nav-inner container">
       <div class="brand">
-        <img src="Domasnav2/domasna_apteka/domasna_apteka_logo_crno.jpg" alt="Лого Домашна Аптека" loading="eager" />
+        <img src="Domasnav2/domasna_apteka/domasna_apteka_logo_crno.jpg"
+             alt="Лого Домашна Аптека" loading="eager" width="32" height="32" />
         <a href="#home" class="logo">Домашна Аптека</a>
       </div>
-      <button class="nav-toggle" id="navToggle" aria-controls="navMenu" aria-expanded="false" aria-label="Мени">
+      <button class="nav-toggle" id="navToggle"
+              aria-controls="navMenu" aria-expanded="false" aria-label="Мени">
         <span></span><span></span><span></span>
       </button>
       <div class="nav-menu" id="navMenu" role="menu">
-        <a href="#home" role="menuitem" class="active">Почетна</a>
-        <a href="#about" role="menuitem">За Нас</a>
+        <a href="#home"     role="menuitem" class="active">Почетна</a>
+        <a href="#about"    role="menuitem">За Нас</a>
         <a href="#products" role="menuitem">Продукти</a>
         <a href="#services" role="menuitem">Сервиси</a>
-        <a href="#contact" role="menuitem">Контакт</a>
+        <a href="#contact"  role="menuitem">Контакт</a>
         <div class="nav-social" aria-label="Социјални мрежи">
-          <a class="social-link instagram" href="https://www.instagram.com/domashna_apteka/"
-             target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram">
+          <a class="social-link instagram"
+             href="https://www.instagram.com/domashna_apteka/"
+             target="_blank" rel="noopener noreferrer"
+             aria-label="Instagram" title="Instagram">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0 3.675a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zm7.406-.358a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88z"/>
             </svg>
           </a>
-          <a class="social-link facebook" href="https://www.facebook.com/domashnaaptekaofficial"
-             target="_blank" rel="noopener noreferrer" aria-label="Facebook" title="Facebook">
+          <a class="social-link facebook"
+             href="https://www.facebook.com/domashnaaptekaofficial"
+             target="_blank" rel="noopener noreferrer"
+             aria-label="Facebook" title="Facebook">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path fill="currentColor" d="M24 12.073C24 5.446 18.627 0 12 0S0 5.446 0 12.073C0 18.1 4.388 23.064 10.125 23.964v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
             </svg>
@@ -362,7 +110,7 @@
     </div>
   </nav>
 
-  <!-- ========= Hero ========= -->
+  <!-- ═══════════ Hero ═══════════ -->
   <header id="home" class="hero">
     <div class="container">
       <h1>Домашна Аптека</h1>
@@ -371,7 +119,7 @@
     </div>
   </header>
 
-  <!-- ========= About ========= -->
+  <!-- ═══════════ About ═══════════ -->
   <section id="about">
     <div class="container about">
       <div>
@@ -379,45 +127,98 @@
         <p>Добредојдовте во Домашна Аптека – место каде што секое шише ликер е создадено со љубов, традиција и посветеност. Нашите домашни ликери се подготвуваат рачно, со внимателно избрани, природни состојки од локалното поднебје, без додадени конзерванси и вештачки ароми.</p>
         <p>Во нашата понуда ќе најдете уникатни вкусови инспирирани од природата и семејните рецепти кои се пренесуваат од генерација на генерација.</p>
       </div>
-      <div class="about-img">Премиум квалитет уште од првиот ден.</div>
+      <figure class="about-img">
+        <figcaption>Премиум квалитет уште од првиот ден.</figcaption>
+      </figure>
     </div>
   </section>
 
-  <!-- ========= Products ========= -->
+  <!-- ═══════════ Products ═══════════ -->
   <section id="products">
     <div class="container">
       <h2 class="section-title">Наши Продукти</h2>
-      <div class="grid auto" id="productsGrid">
-        <p class="loading-msg">Се вчитуваат производите…</p>
+
+      <!-- Search & filter toolbar -->
+      <div class="products-toolbar" role="search" aria-label="Филтрирај производи">
+        <div class="search-wrap">
+          <label for="productSearch" class="sr-only">Пребарај производи</label>
+          <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input type="search" id="productSearch"
+                 placeholder="Пребарај производи…"
+                 autocomplete="off" />
+        </div>
+        <div class="filter-group">
+          <label for="productSort" class="sr-only">Сортирај</label>
+          <select id="productSort" aria-label="Сортирај производи">
+            <option value="default">Стандардно</option>
+            <option value="price-asc">Цена: ниска → висока</option>
+            <option value="price-desc">Цена: висока → ниска</option>
+          </select>
+          <label class="stock-toggle">
+            <input type="checkbox" id="inStockOnly" />
+            <span>Само достапни</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="grid auto" id="productsGrid"
+           aria-live="polite" aria-label="Листа на производи">
+        <!-- Populated by app.js -->
       </div>
     </div>
   </section>
 
-  <!-- ========= Services ========= -->
+  <!-- ═══════════ Services ═══════════ -->
   <section id="services">
     <div class="container">
       <h2 class="section-title">Наши Сервиси</h2>
       <div class="grid auto">
-        <div class="service"><h3>Достава до дома</h3><p>Брза и сигурна достава до дома.</p></div>
-        <div class="service"><h3>Онлајн Поддршка 24/7</h3><p>24/7 онлајн поддршка за информации.</p></div>
+        <div class="service">
+          <h3>🚚 Достава до дома</h3>
+          <p>Брза и сигурна достава до вашата адреса.</p>
+        </div>
+        <div class="service">
+          <h3>💬 Онлајн Поддршка 24/7</h3>
+          <p>24/7 онлајн поддршка за сите ваши прашања.</p>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ========= Contact quick ========= -->
+  <!-- ═══════════ Contact quick ═══════════ -->
   <section id="contact" class="bg-surface-2">
     <div class="container">
       <h2 class="section-title">Посетете Не</h2>
       <div class="grid auto contact-quick">
-        <div class="contact-item"><div class="ico">📍</div><div><h4>Адреса</h4><p>Село Блатец - Македонија</p></div></div>
-        <div class="contact-item"><div class="ico">📞</div><div><h4>Телефонски Број</h4><p><a href="tel:+38972763044" style="text-decoration:none;color:inherit">072/763-044</a></p></div></div>
-        <div class="contact-item"><div class="ico">📧</div><div><h4>Емаил</h4><p><a href="mailto:domasnaapteka@yahoo.com" style="text-decoration:none;color:inherit">domasnaapteka@yahoo.com</a></p></div></div>
-        <div class="contact-item"><div class="ico">🕒</div><div><h4>Работиме</h4><p>Пон-Пет: 8:00–22:00 · Саб: 10:00–20:00</p></div></div>
+        <div class="contact-item">
+          <div class="ico">📍</div>
+          <div><h4>Адреса</h4><p>Село Блатец - Македонија</p></div>
+        </div>
+        <div class="contact-item">
+          <div class="ico">📞</div>
+          <div>
+            <h4>Телефонски Број</h4>
+            <p><a href="tel:+38972763044">072/763-044</a></p>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="ico">📧</div>
+          <div>
+            <h4>Емаил</h4>
+            <p><a href="mailto:domasnaapteka@yahoo.com">domasnaapteka@yahoo.com</a></p>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="ico">🕒</div>
+          <div><h4>Работиме</h4><p>Пон–Пет: 8:00–22:00 · Саб: 10:00–20:00</p></div>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ========= Order form & Map ========= -->
+  <!-- ═══════════ Order form & Map ═══════════ -->
   <section class="bg-white">
     <div class="container contact-wrap" id="order">
       <div>
@@ -425,53 +226,87 @@
         <h3 class="brand-text mb-8">Направете нарачка</h3>
         <p class="subtitle">Испратете нарачка и ќе ви одговориме во најкраток можен рок.</p>
 
-        <div class="alert ok" id="successMessage" style="display:none">✅ Ви Благодариме! Вашата нарачка е успешно испратена.</div>
-        <div class="alert err" id="errorMessage" style="display:none">❌ Грешка при испраќање. Ве молиме обидете се повторно.</div>
+        <div class="alert ok" id="successMessage" hidden role="alert"></div>
+        <div class="alert err" id="errorMessage"  hidden role="alert"></div>
 
         <form id="contactForm" novalidate>
-          <input type="text" id="name" name="name" placeholder="Ime" autocomplete="given-name" required>
-          <input type="text" id="surname" name="surname" placeholder="Презиме" autocomplete="family-name" required>
-          <input type="text" id="city" name="city" placeholder="Град" autocomplete="address-level2" required>
-          <input type="text" id="address" name="address" placeholder="Адреса" autocomplete="street-address" required>
-          <input type="tel" id="phone" name="phone" placeholder="Телефонски број"
-                 inputmode="tel" autocomplete="tel" required
-                 pattern="^\+?[0-9\s\-()]{7,}$"
-                 title="Внесете валиден телефонски број">
-          <textarea id="message" name="message" placeholder="Дополнителни напомени / Дополнителни производи"></textarea>
+          <div class="form-group-grid">
+            <div>
+              <label for="name">Име</label>
+              <input type="text" id="name" name="name"
+                     placeholder="Ваше Име"
+                     autocomplete="given-name" required />
+            </div>
+            <div>
+              <label for="surname">Презиме</label>
+              <input type="text" id="surname" name="surname"
+                     placeholder="Ваше Презиме"
+                     autocomplete="family-name" required />
+            </div>
+          </div>
+          <div class="form-group-grid">
+            <div>
+              <label for="city">Град</label>
+              <input type="text" id="city" name="city"
+                     placeholder="Вашиот Град"
+                     autocomplete="address-level2" required />
+            </div>
+            <div>
+              <label for="address">Адреса</label>
+              <input type="text" id="address" name="address"
+                     placeholder="Улица и број"
+                     autocomplete="street-address" required />
+            </div>
+          </div>
+          <div>
+            <label for="phone">Телефонски број</label>
+            <input type="tel" id="phone" name="phone"
+                   placeholder="072/763-044"
+                   inputmode="tel" autocomplete="tel" required
+                   pattern="^\+?[0-9\s\-()]{7,}$"
+                   title="Внесете валиден телефонски број" />
+          </div>
+          <div>
+            <label for="message">Напомени (незадолжително)</label>
+            <textarea id="message" name="message"
+                      placeholder="Дополнителни производи или напомени…"></textarea>
+          </div>
           <button type="submit" id="submitBtn">Направи Нарачка</button>
         </form>
       </div>
+
       <div>
         <h3 class="section-title brand-text mb-8">Пронајдете ја нашата продавница</h3>
         <div class="location-info">
-          <strong>Домашна Аптека</strong><br>
+          <strong>Домашна Аптека</strong><br />
           <span>Село Блатец, Македонија</span>
         </div>
         <p class="subtitle">Сместени во срцето на Блатец, лесно сме достапни.</p>
         <div class="map">
           <iframe loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"
+            title="Локација на Домашна Аптека"
             src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d10234.690689928013!2d22.57366382890801!3d41.83584450320912!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x13558ae7ae6c31eb%3A0x7187b72871c4fe4e!2sBlatec!5e1!3m2!1sen!2smk!4v1750812785517!5m2!1sen!2smk"></iframe>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ========= Footer ========= -->
+  <!-- ═══════════ Footer ═══════════ -->
   <footer>
-    <div class="container">&copy; 2025 Домашна Аптека. Сите права задржани.
-      <a href="admin.html" style="color:inherit;opacity:.3;font-size:.75rem;margin-left:1rem">⚙</a>
+    <div class="container">
+      &copy; 2025 Домашна Аптека. Сите права задржани.
+      <a href="admin.html" style="color:inherit;opacity:.25;font-size:.75rem;margin-left:1rem">⚙</a>
     </div>
   </footer>
 
   <!-- Sticky mobile action bar -->
   <nav class="sticky-actions" aria-label="Брзи акции">
-    <a class="act call" href="tel:+38972763044">📞 Повикај</a>
+    <a class="act call"  href="tel:+38972763044">📞 Повикај</a>
     <a class="act order" href="#order">🛒 Нарачај</a>
-    <a class="act wa" href="https://wa.me/38972763044" target="_blank" rel="noopener">💬 WhatsApp</a>
+    <a class="act wa"    href="https://wa.me/38972763044" target="_blank" rel="noopener">💬 WhatsApp</a>
   </nav>
 
-  <!-- Link to external JS -->
-  <script src="Domasnav2/script.js"></script>
-
+  <!-- Modular app (replaces inline script + root script.js) -->
+  <script type="module" src="Domasnav2/app.js"></script>
 </body>
 </html>
