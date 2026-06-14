@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Домашна Аптека — Администрација</title>
+<meta name="robots" content="noindex,nofollow"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+/* ══════════════════════════════════════════════
+   Design tokens — earthy / botanical palette
+   matching the store's green-and-amber feel
+══════════════════════════════════════════════ */
+:root{
+  --bg:        #f7f5f0;
+  --surface:   #ffffff;
+  --surface2:  #f0ede6;
+  --border:    #ddd9d0;
+  --green:     #2d6a4f;
+  --green-lt:  #52b788;
+  --amber:     #d4a017;
+  --red:       #c0392b;
+  --text:      #1a1a1a;
+  --muted:     #6b6560;
+  --radius:    10px;
+  --shadow:    0 2px 12px #0000000d;
+  --nav-w:     220px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);
+     display:flex;min-height:100vh;font-size:15px}
+
+/* ── Login overlay ── */
+#loginOverlay{
+  position:fixed;inset:0;background:var(--green);
+  display:flex;align-items:center;justify-content:center;z-index:9999;
+}
+.login-box{background:#fff;border-radius:16px;padding:2.5rem;width:min(360px,92vw);
+           box-shadow:0 8px 40px #0003}
+.login-box h1{font-size:1.4rem;margin-bottom:.25rem;color:var(--green)}
+.login-box p{color:var(--muted);font-size:.9rem;margin-bottom:1.5rem}
+.login-box input{width:100%;padding:.7rem .9rem;border:1.5px solid var(--border);
+                 border-radius:8px;margin-bottom:.75rem;font-size:1rem;outline:none}
+.login-box input:focus{border-color:var(--green)}
+.login-box button{width:100%;padding:.8rem;background:var(--green);color:#fff;
+                  border:none;border-radius:8px;font-size:1rem;cursor:pointer}
+.login-err{color:var(--red);font-size:.85rem;margin-top:.5rem;display:none}
+
+/* ── Sidebar nav ── */
+#sidebar{
+  width:var(--nav-w);min-height:100vh;background:var(--green);color:#fff;
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;
+  z-index:100;transition:transform .3s;
+}
+.sb-logo{padding:1.5rem 1.25rem 1rem;border-bottom:1px solid #ffffff22}
+.sb-logo strong{font-size:1.05rem;display:block}
+.sb-logo small{opacity:.6;font-size:.78rem}
+.sb-nav{flex:1;padding:.75rem 0;overflow-y:auto}
+.sb-link{
+  display:flex;align-items:center;gap:.75rem;padding:.7rem 1.25rem;
+  color:#ffffffcc;text-decoration:none;font-size:.92rem;cursor:pointer;
+  border-left:3px solid transparent;transition:all .15s;background:none;border-top:none;
+  border-right:none;border-bottom:none;width:100%;text-align:left;
+}
+.sb-link:hover{color:#fff;background:#ffffff15}
+.sb-link.active{color:#fff;background:#ffffff20;border-left-color:#a7f3d0}
+.sb-icon{font-size:1.1rem;width:20px;text-align:center}
+.sb-footer{padding:1rem 1.25rem;border-top:1px solid #ffffff22;font-size:.78rem;opacity:.5}
+
+/* ── Main area ── */
+#main{margin-left:var(--nav-w);flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:.85rem 1.5rem;display:flex;align-items:center;gap:1rem;
+  position:sticky;top:0;z-index:50;
+}
+.topbar h2{font-size:1.05rem;font-weight:600;flex:1}
+.topbar .logout{background:none;border:1.5px solid var(--border);padding:.35rem .8rem;
+                border-radius:6px;cursor:pointer;font-size:.85rem;color:var(--muted)}
+.page{padding:1.5rem;display:none;flex-direction:column;gap:1.25rem}
+.page.active{display:flex}
+
+/* ── Stat cards ── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem}
+.stat-card{background:var(--surface);border-radius:var(--radius);padding:1.1rem 1.25rem;
+           box-shadow:var(--shadow);border:1px solid var(--border)}
+.stat-card .label{font-size:.78rem;color:var(--muted);text-transform:uppercase;
+                  letter-spacing:.04em;margin-bottom:.3rem}
+.stat-card .val{font-size:1.7rem;font-weight:700;color:var(--green)}
+.stat-card .sub{font-size:.78rem;color:var(--muted);margin-top:.15rem}
+
+/* ── Chart card ── */
+.chart-card{background:var(--surface);border-radius:var(--radius);padding:1.25rem;
+            box-shadow:var(--shadow);border:1px solid var(--border)}
+.chart-card h3{font-size:.9rem;font-weight:600;margin-bottom:1rem;color:var(--muted)}
+.chart-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:700px){.chart-row{grid-template-columns:1fr}}
+
+/* ── Table ── */
+.card-section{background:var(--surface);border-radius:var(--radius);
+              box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden}
+.cs-head{display:flex;align-items:center;justify-content:space-between;
+         padding:.9rem 1.25rem;border-bottom:1px solid var(--border)}
+.cs-head h3{font-size:.95rem;font-weight:600}
+table{width:100%;border-collapse:collapse}
+th{background:var(--surface2);font-size:.78rem;font-weight:600;text-transform:uppercase;
+   letter-spacing:.04em;color:var(--muted);padding:.6rem .9rem;text-align:left}
+td{padding:.65rem .9rem;font-size:.88rem;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafaf8}
+.tbl-wrap{overflow-x:auto}
+
+/* ── Badges / pills ── */
+.pill{display:inline-block;padding:.2rem .6rem;border-radius:50px;font-size:.75rem;font-weight:600}
+.pill.нова        {background:#dbeafe;color:#1d4ed8}
+.pill.во-обработка{background:#fef9c3;color:#854d0e}
+.pill.испратена   {background:#d1fae5;color:#065f46}
+.pill.доставена   {background:#f0fdf4;color:#166534}
+.pill.откажана    {background:#fee2e2;color:#991b1b}
+.stock-ok  {color:var(--green-lt)}
+.stock-low {color:var(--amber)}
+.stock-none{color:var(--red)}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1rem;
+     border-radius:7px;border:none;cursor:pointer;font-size:.85rem;font-weight:500;
+     transition:opacity .15s}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{opacity:.88}
+.btn-amber{background:var(--amber);color:#fff}.btn-amber:hover{opacity:.88}
+.btn-red  {background:var(--red);  color:#fff}.btn-red:hover{opacity:.88}
+.btn-ghost{background:none;color:var(--muted);border:1.5px solid var(--border)}
+.btn-ghost:hover{background:var(--surface2)}
+.btn-sm{padding:.3rem .65rem;font-size:.78rem}
+
+/* ── Modal ── */
+.modal-bg{position:fixed;inset:0;background:#0006;z-index:500;
+          display:none;align-items:center;justify-content:center;padding:1rem}
+.modal-bg.open{display:flex}
+.modal{background:#fff;border-radius:14px;padding:1.75rem;width:min(500px,100%);
+       max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px #0004}
+.modal h3{font-size:1.1rem;margin-bottom:1.25rem}
+.form-group{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.9rem}
+.form-group label{font-size:.82rem;font-weight:600;color:var(--muted)}
+.form-group input,.form-group textarea,.form-group select{
+  padding:.6rem .8rem;border:1.5px solid var(--border);border-radius:7px;font-size:.9rem;
+  outline:none;width:100%;transition:border-color .15s}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--green)}
+.form-group textarea{resize:vertical;min-height:80px}
+.modal-actions{display:flex;gap:.75rem;justify-content:flex-end;margin-top:1rem;flex-wrap:wrap}
+
+/* ── Toast ── */
+#adminToast{position:fixed;bottom:1.5rem;right:1.5rem;background:#222;color:#fff;
+            padding:.65rem 1.1rem;border-radius:8px;font-size:.88rem;z-index:9998;
+            opacity:0;transform:translateY(10px);transition:all .25s;pointer-events:none}
+#adminToast.show{opacity:1;transform:translateY(0)}
+
+/* ── Search/filter bar ── */
+.filter-row{display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;padding:.75rem 1.25rem;
+            border-bottom:1px solid var(--border)}
+.filter-row input,.filter-row select{padding:.45rem .7rem;border:1.5px solid var(--border);
+  border-radius:6px;font-size:.85rem;outline:none}
+.filter-row input:focus,.filter-row select:focus{border-color:var(--green)}
+
+/* ── Image preview ── */
+.img-preview{width:48px;height:48px;object-fit:cover;border-radius:6px;border:1px solid var(--border)}
+
+/* ── Low stock alert ── */
+.alert-banner{background:#fffbeb;border:1.5px solid var(--amber);border-radius:var(--radius);
+              padding:.75rem 1rem;font-size:.88rem;color:#78350f;display:flex;gap:.5rem;align-items:center}
+
+/* ── Mobile nav toggle ── */
+.mob-menu-btn{display:none;background:none;border:none;cursor:pointer;font-size:1.4rem;color:var(--muted)}
+@media(max-width:768px){
+  #sidebar{transform:translateX(-100%)}
+  #sidebar.open{transform:translateX(0)}
+  #main{margin-left:0}
+  .mob-menu-btn{display:block}
+  .chart-row{grid-template-columns:1fr}
+}
+.overlay{display:none;position:fixed;inset:0;background:#0004;z-index:99}
+.overlay.show{display:block}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══════════════════════════════════════════════════ -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <h1>🌿 Домашна Аптека</h1>
+    <p>Администраторски пристап</p>
+    <input type="email" id="loginEmail" placeholder="Емаил" autocomplete="email"/>
+    <input type="password" id="loginPass" placeholder="Лозинка" autocomplete="current-password"/>
+    <button onclick="doLogin()">Влези →</button>
+    <p class="login-err" id="loginErr">Погрешен емаил или лозинка.</p>
+  </div>
+</div>
+
+<!-- ══ SIDEBAR ════════════════════════════════════════════════ -->
+<div id="sidebar">
+  <div class="sb-logo">
+    <strong>Домашна Аптека</strong>
+    <small>Администрација</small>
+  </div>
+  <nav class="sb-nav">
+    <button class="sb-link active" onclick="showPage('dashboard')">
+      <span class="sb-icon">📊</span> Преглед
+    </button>
+    <button class="sb-link" onclick="showPage('orders')">
+      <span class="sb-icon">📋</span> Нарачки
+      <span id="newOrdersBadge" style="background:#e63946;color:#fff;border-radius:50px;padding:.1rem .4rem;font-size:.7rem;margin-left:auto;display:none"></span>
+    </button>
+    <button class="sb-link" onclick="showPage('products')">
+      <span class="sb-icon">🍾</span> Производи
+    </button>
+    <button class="sb-link" onclick="showPage('stock')">
+      <span class="sb-icon">📦</span> Залиха
+    </button>
+    <a class="sb-link" href="index.html" target="_blank">
+      <span class="sb-icon">🌐</span> Продавница
+    </a>
+  </nav>
+  <div class="sb-footer">v2.0 · Домашна Аптека</div>
+</div>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- ══ MAIN ═══════════════════════════════════════════════════ -->
+<div id="main">
+  <div class="topbar">
+    <button class="mob-menu-btn" onclick="openSidebar()">☰</button>
+    <h2 id="pageTitle">Преглед</h2>
+    <button class="logout" onclick="doLogout()">⇠ Излез</button>
+  </div>
+
+  <!-- ── Dashboard ── -->
+  <div class="page active" id="page-dashboard">
+    <div class="stats-row" id="statsRow">
+      <div class="stat-card"><div class="label">Вкупно нарачки</div><div class="val" id="s-orders">—</div></div>
+      <div class="stat-card"><div class="label">Нови нарачки</div><div class="val" id="s-new">—</div></div>
+      <div class="stat-card"><div class="label">Вкупен приход</div><div class="val" id="s-revenue">—</div><div class="sub">ден</div></div>
+      <div class="stat-card"><div class="label">Производи</div><div class="val" id="s-products">—</div></div>
+      <div class="stat-card"><div class="label">Ниска залиха</div><div class="val" id="s-lowstock" style="color:var(--amber)">—</div></div>
+    </div>
+
+    <div id="lowStockAlert" style="display:none" class="alert-banner">
+      ⚠️ <span id="lowStockMsg"></span>
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>Нарачки по ден (последни 14 дена)</h3>
+        <canvas id="chartOrders" height="180"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>Приход по производ</h3>
+        <canvas id="chartRevenue" height="180"></canvas>
+      </div>
+    </div>
+
+    <div class="card-section">
+      <div class="cs-head"><h3>Последни нарачки</h3>
+        <button class="btn btn-ghost btn-sm" onclick="showPage('orders')">Сите нарачки →</button>
+      </div>
+      <div class="tbl-wrap">
+        <table id="recentOrdersTable">
+          <thead><tr><th>Клиент</th><th>Тел.</th><th>Производи</th><th>Вкупно</th><th>Статус</th><th>Дата</th></tr></thead>
+          <tbody id="recentOrdersBody"><tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Се вчитува…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Orders page ── -->
+  <div class="page" id="page-orders">
+    <div class="card-section">
+      <div class="cs-head">
+        <h3>Сите нарачки</h3>
+        <button class="btn btn-green btn-sm" onclick="loadOrders()">↻ Освежи</button>
+      </div>
+      <div class="filter-row">
+        <input id="orderSearch" placeholder="🔍 Пребарај клиент / тел…" oninput="filterOrders()"/>
+        <select id="statusFilter" onchange="filterOrders()">
+          <option value="">Сите статуси</option>
+          <option>нова</option><option>во обработка</option>
+          <option>испратена</option><option>доставена</option><option>откажана</option>
+        </select>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Клиент</th><th>Град</th><th>Тел.</th><th>Нарачани</th><th>Вкупно</th><th>Статус</th><th>Дата</th><th>Акции</th></tr></thead>
+          <tbody id="ordersBody"><tr><td colspan="9" style="text-align:center;color:#aaa;padding:2rem">Се вчитува…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Products page ── -->
+  <div class="page" id="page-products">
+    <div class="card-section">
+      <div class="cs-head">
+        <h3>Производи</h3>
+        <button class="btn btn-green btn-sm" onclick="openProductModal()">+ Додај производ</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Слика</th><th>Назив</th><th>Цена</th><th>Залиха</th><th>Значка</th><th>Активен</th><th>Акции</th></tr></thead>
+          <tbody id="productsBody"><tr><td colspan="7" style="text-align:center;color:#aaa;padding:2rem">Се вчитува…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Stock page ── -->
+  <div class="page" id="page-stock">
+    <div class="card-section">
+      <div class="cs-head">
+        <h3>Управување со залиха</h3>
+        <button class="btn btn-ghost btn-sm" onclick="loadStock()">↻ Освежи</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Производ</th><th>Тековна залиха</th><th>Статус</th><th>Брза промена</th></tr></thead>
+          <tbody id="stockBody"><tr><td colspan="4" style="text-align:center;color:#aaa;padding:2rem">Се вчитува…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PRODUCT MODAL ══════════════════════════════════════════ -->
+<div class="modal-bg" id="productModal">
+  <div class="modal">
+    <h3 id="productModalTitle">Додај производ</h3>
+    <input type="hidden" id="pm-id"/>
+    <div class="form-group"><label>Назив *</label><input id="pm-name" placeholder="Ореовка…"/></div>
+    <div class="form-group"><label>Опис</label><textarea id="pm-desc" placeholder="Кратка опис на производот…"></textarea></div>
+    <div class="form-group"><label>Цена (ден) *</label><input id="pm-price" type="number" min="0" placeholder="800"/></div>
+    <div class="form-group"><label>Залиха (количина) *</label><input id="pm-stock" type="number" min="0" placeholder="50"/></div>
+    <div class="form-group"><label>URL на слика</label><input id="pm-img" placeholder="Domasnav2/domasna_apteka/slika.jpg"/></div>
+    <div class="form-group"><label>Значка</label>
+      <select id="pm-badge">
+        <option value="">Без значка</option>
+        <option value="Ново">Ново</option>
+        <option value="Попуст">Попуст</option>
+      </select>
+    </div>
+    <div class="form-group"><label>
+      <input type="checkbox" id="pm-active" checked style="width:auto;margin-right:.4rem"/>
+      Активен (прикажан во продавницата)
+    </label></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeProductModal()">Откажи</button>
+      <button class="btn btn-green" onclick="saveProduct()">💾 Зачувај</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ORDER DETAIL MODAL ════════════════════════════════════ -->
+<div class="modal-bg" id="orderModal">
+  <div class="modal">
+    <h3>Детали за нарачка</h3>
+    <div id="orderModalContent"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeOrderModal()">Затвори</button>
+    </div>
+  </div>
+</div>
+
+<div id="adminToast"></div>
+
+<!-- ══ SCRIPTS ════════════════════════════════════════════════ -->
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+// ─── REPLACE THESE ────────────────────────────────────────────
+const SUPABASE_URL      = 'https://oictkykqxzjqaaraxiwc.supabase.co/rest/v1/';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pY3RreWtxeHpqcWFhcmF4aXdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NDQzNjQsImV4cCI6MjA5NzAyMDM2NH0.UedRaA7Ak7tQ7UiCT0VOZK_wb00YxuCcnDBkXrTpP6M';
+// ─────────────────────────────────────────────────────────────
+
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+window._sb = sb;  // expose for inline handlers
+
+/* ── Auth ─────────────────────────────────────────────────── */
+window.doLogin = async function() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    document.getElementById('loginErr').style.display = 'block';
+  } else {
+    document.getElementById('loginOverlay').style.display = 'none';
+    init();
+  }
+};
+
+window.doLogout = async function() {
+  await sb.auth.signOut();
+  location.reload();
+};
+
+// Check if already logged in
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session) {
+    document.getElementById('loginOverlay').style.display = 'none';
+    init();
+  }
+});
+
+// Enter key on login
+['loginEmail','loginPass'].forEach(id => {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+});
+
+/* ── Init ──────────────────────────────────────────────────── */
+async function init() {
+  await Promise.all([loadDashboard(), loadOrders(), loadProducts(), loadStock()]);
+}
+
+/* ══ DASHBOARD ═════════════════════════════════════════════ */
+async function loadDashboard() {
+  const [{ data: orders }, { data: products }] = await Promise.all([
+    sb.from('orders').select('id,total_amount,status,created_at,name,surname,phone,order_items(product_name,quantity,price)'),
+    sb.from('products').select('*'),
+  ]);
+
+  if (!orders || !products) return;
+
+  // Stats
+  const totalRev   = orders.reduce((s,o) => s + (o.total_amount||0), 0);
+  const newOrders  = orders.filter(o => o.status === 'нова').length;
+  const lowStock   = products.filter(p => p.stock > 0 && p.stock <= 5);
+  const outOfStock = products.filter(p => p.stock <= 0);
+
+  document.getElementById('s-orders').textContent  = orders.length;
+  document.getElementById('s-new').textContent      = newOrders;
+  document.getElementById('s-revenue').textContent  = totalRev.toLocaleString('mk-MK') + ' ден';
+  document.getElementById('s-products').textContent = products.length;
+  document.getElementById('s-lowstock').textContent = lowStock.length + outOfStock.length;
+
+  if (newOrders > 0) {
+    const b = document.getElementById('newOrdersBadge');
+    b.textContent = newOrders; b.style.display = 'inline';
+  }
+
+  if (lowStock.length || outOfStock.length) {
+    const al = document.getElementById('lowStockAlert');
+    al.style.display = 'flex';
+    const names = [...outOfStock.map(p=>p.name+' (0)'), ...lowStock.map(p=>p.name+' ('+p.stock+')')];
+    document.getElementById('lowStockMsg').textContent =
+      'Ниска залиха: ' + names.join(', ');
+  }
+
+  // Recent orders table
+  const recent = [...orders].sort((a,b) => new Date(b.created_at)-new Date(a.created_at)).slice(0,8);
+  const tb = document.getElementById('recentOrdersBody');
+  tb.innerHTML = recent.map(o => `
+    <tr>
+      <td>${o.name} ${o.surname}</td>
+      <td>${o.phone}</td>
+      <td>${(o.order_items||[]).map(i=>`${i.product_name} ×${i.quantity}`).join(', ') || o.message||'—'}</td>
+      <td>${(o.total_amount||0).toLocaleString('mk-MK')} ден</td>
+      <td><span class="pill ${o.status.replace(' ','-')}">${o.status}</span></td>
+      <td>${new Date(o.created_at).toLocaleDateString('mk-MK')}</td>
+    </tr>`).join('');
+
+  buildCharts(orders, products);
+}
+
+function buildCharts(orders, products) {
+  // Orders per day last 14 days
+  const days = Array.from({length:14}, (_,i) => {
+    const d = new Date(); d.setDate(d.getDate()-13+i);
+    return d.toISOString().slice(0,10);
+  });
+  const countByDay = Object.fromEntries(days.map(d=>[d,0]));
+  orders.forEach(o => {
+    const d = o.created_at?.slice(0,10);
+    if (countByDay[d] !== undefined) countByDay[d]++;
+  });
+
+  const ctx1 = document.getElementById('chartOrders').getContext('2d');
+  new Chart(ctx1, {
+    type:'bar',
+    data:{
+      labels: days.map(d=>d.slice(5)),
+      datasets:[{
+        label:'Нарачки',
+        data: days.map(d=>countByDay[d]),
+        backgroundColor:'#52b78888',
+        borderColor:'#2d6a4f',
+        borderWidth:1.5,
+        borderRadius:4,
+      }]
+    },
+    options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
+  });
+
+  // Revenue by product
+  const revByProduct = {};
+  orders.forEach(o => {
+    (o.order_items||[]).forEach(i => {
+      revByProduct[i.product_name] = (revByProduct[i.product_name]||0) + i.price * i.quantity;
+    });
+  });
+  const pNames = Object.keys(revByProduct);
+  const colors = ['#2d6a4f','#52b788','#d4a017','#e63946','#6b6560'];
+
+  const ctx2 = document.getElementById('chartRevenue').getContext('2d');
+  new Chart(ctx2, {
+    type:'doughnut',
+    data:{
+      labels: pNames.length ? pNames : ['Нема податоци'],
+      datasets:[{
+        data: pNames.length ? pNames.map(n=>revByProduct[n]) : [1],
+        backgroundColor: colors,
+      }]
+    },
+    options:{plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}}
+  });
+}
+
+/* ══ ORDERS ════════════════════════════════════════════════ */
+let _allOrders = [];
+window.loadOrders = async function() {
+  const { data } = await sb.from('orders')
+    .select('*,order_items(product_name,quantity,price)')
+    .order('created_at',{ascending:false});
+  _allOrders = data || [];
+  renderOrders(_allOrders);
+};
+
+function renderOrders(orders) {
+  const tb = document.getElementById('ordersBody');
+  if (!orders.length) {
+    tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:2rem">Нема нарачки.</td></tr>';
+    return;
+  }
+  tb.innerHTML = orders.map((o,i) => `
+    <tr>
+      <td style="color:var(--muted);font-size:.78rem">#${i+1}</td>
+      <td>${o.name} ${o.surname}</td>
+      <td>${o.city}</td>
+      <td><a href="tel:${o.phone}" style="color:var(--green)">${o.phone}</a></td>
+      <td style="max-width:180px;font-size:.82rem">${(o.order_items||[]).map(i=>`${i.product_name} ×${i.quantity}`).join(', ')||o.message||'—'}</td>
+      <td>${(o.total_amount||0).toLocaleString('mk-MK')} ден</td>
+      <td>
+        <select class="status-sel" onchange="updateOrderStatus('${o.id}',this.value)"
+          style="padding:.25rem .4rem;border:1.5px solid var(--border);border-radius:5px;font-size:.8rem">
+          ${['нова','во обработка','испратена','доставена','откажана']
+            .map(s=>`<option ${s===o.status?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </td>
+      <td>${new Date(o.created_at).toLocaleDateString('mk-MK')}</td>
+      <td>
+        <button class="btn btn-ghost btn-sm" onclick="openOrderModal('${o.id}')">👁</button>
+        <button class="btn btn-red btn-sm" onclick="deleteOrder('${o.id}')">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+
+window.filterOrders = function() {
+  const q = document.getElementById('orderSearch').value.toLowerCase();
+  const s = document.getElementById('statusFilter').value;
+  renderOrders(_allOrders.filter(o =>
+    (!s || o.status === s) &&
+    (!q || `${o.name} ${o.surname} ${o.phone} ${o.city}`.toLowerCase().includes(q))
+  ));
+};
+
+window.updateOrderStatus = async function(id, status) {
+  const { error } = await sb.from('orders').update({status}).eq('id',id);
+  if (error) toast('❌ Грешка при ажурирање'); else toast('✅ Статусот е ажуриран');
+};
+
+window.deleteOrder = async function(id) {
+  if (!confirm('Да се избрише оваа нарачка?')) return;
+  await sb.from('orders').delete().eq('id',id);
+  toast('🗑 Нарачката е избришана');
+  loadOrders();
+};
+
+window.openOrderModal = function(id) {
+  const o = _allOrders.find(x=>x.id===id);
+  if (!o) return;
+  const items = (o.order_items||[]);
+  const total = items.reduce((s,i)=>s+i.price*i.quantity,0);
+  document.getElementById('orderModalContent').innerHTML = `
+    <div style="display:grid;gap:.6rem;font-size:.9rem">
+      <div><strong>Клиент:</strong> ${o.name} ${o.surname}</div>
+      <div><strong>Град / Адреса:</strong> ${o.city}, ${o.address}</div>
+      <div><strong>Телефон:</strong> <a href="tel:${o.phone}">${o.phone}</a></div>
+      <div><strong>Статус:</strong> <span class="pill ${o.status.replace(' ','-')}">${o.status}</span></div>
+      <div><strong>Датум:</strong> ${new Date(o.created_at).toLocaleString('mk-MK')}</div>
+      ${o.message ? `<div><strong>Напомена:</strong> ${o.message}</div>` : ''}
+      ${items.length ? `
+        <hr style="border:none;border-top:1px solid var(--border);margin:.25rem 0"/>
+        <strong>Нарачани производи:</strong>
+        ${items.map(i=>`<div style="display:flex;justify-content:space-between">
+          <span>${i.product_name} × ${i.quantity}</span>
+          <span>${(i.price*i.quantity).toLocaleString('mk-MK')} ден</span>
+        </div>`).join('')}
+        <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:.4rem">
+          <span>Вкупно:</span><span>${total.toLocaleString('mk-MK')} ден</span>
+        </div>` : ''}
+    </div>`;
+  document.getElementById('orderModal').classList.add('open');
+};
+window.closeOrderModal = () => document.getElementById('orderModal').classList.remove('open');
+
+/* ══ PRODUCTS ══════════════════════════════════════════════ */
+let _allProducts = [];
+window.loadProducts = async function() {
+  const { data } = await sb.from('products').select('*').order('created_at');
+  _allProducts = data || [];
+  renderProductsTable(_allProducts);
+};
+
+function renderProductsTable(products) {
+  const tb = document.getElementById('productsBody');
+  if (!products.length) {
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:2rem">Нема производи.</td></tr>';
+    return;
+  }
+  tb.innerHTML = products.map(p => `
+    <tr>
+      <td><img class="img-preview" src="${p.image_url||''}" alt="${p.name}"
+               onerror="this.style.display='none'"/></td>
+      <td><strong>${p.name}</strong></td>
+      <td>${(p.price||0).toLocaleString('mk-MK')} ден</td>
+      <td class="${p.stock<=0?'stock-none':p.stock<=5?'stock-low':'stock-ok'}">${p.stock}</td>
+      <td>${p.badge||'—'}</td>
+      <td>${p.active?'✅':'❌'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-amber btn-sm" onclick="openProductModal('${p.id}')">✏️ Уреди</button>
+        <button class="btn btn-red btn-sm" onclick="deleteProduct('${p.id}')">🗑</button>
+      </td>
+    </tr>`).join('');
+}
+
+window.openProductModal = function(id) {
+  const p = _allProducts.find(x=>x.id===id);
+  document.getElementById('productModalTitle').textContent = p ? 'Уреди производ' : 'Додај производ';
+  document.getElementById('pm-id').value      = p?.id||'';
+  document.getElementById('pm-name').value    = p?.name||'';
+  document.getElementById('pm-desc').value    = p?.description||'';
+  document.getElementById('pm-price').value   = p?.price||'';
+  document.getElementById('pm-stock').value   = p?.stock||'';
+  document.getElementById('pm-img').value     = p?.image_url||'';
+  document.getElementById('pm-badge').value   = p?.badge||'';
+  document.getElementById('pm-active').checked= p?.active!==false;
+  document.getElementById('productModal').classList.add('open');
+};
+window.closeProductModal = () => document.getElementById('productModal').classList.remove('open');
+
+window.saveProduct = async function() {
+  const id    = document.getElementById('pm-id').value;
+  const data  = {
+    name:        document.getElementById('pm-name').value.trim(),
+    description: document.getElementById('pm-desc').value.trim(),
+    price:       parseFloat(document.getElementById('pm-price').value)||0,
+    stock:       parseInt(document.getElementById('pm-stock').value)||0,
+    image_url:   document.getElementById('pm-img').value.trim(),
+    badge:       document.getElementById('pm-badge').value||null,
+    active:      document.getElementById('pm-active').checked,
+  };
+  if (!data.name) { toast('❌ Внесете назив'); return; }
+
+  const { error } = id
+    ? await sb.from('products').update(data).eq('id',id)
+    : await sb.from('products').insert(data);
+
+  if (error) { toast('❌ Грешка: '+error.message); return; }
+  toast('✅ Производот е зачуван');
+  closeProductModal();
+  loadProducts();
+  loadStock();
+};
+
+window.deleteProduct = async function(id) {
+  if (!confirm('Да се избрише овој производ?')) return;
+  await sb.from('products').delete().eq('id',id);
+  toast('🗑 Производот е избришан');
+  loadProducts();
+};
+
+/* ══ STOCK PAGE ═══════════════════════════════════════════ */
+window.loadStock = async function() {
+  const { data: products } = await sb.from('products').select('*').order('name');
+  const tb = document.getElementById('stockBody');
+  if (!products?.length) {
+    tb.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#aaa;padding:2rem">Нема производи.</td></tr>';
+    return;
+  }
+  tb.innerHTML = products.map(p => {
+    const cls = p.stock<=0?'stock-none':p.stock<=5?'stock-low':'stock-ok';
+    const lbl = p.stock<=0?'Нема залиха':p.stock<=5?'Ниска залиха':'Во ред';
+    return `
+      <tr>
+        <td><strong>${p.name}</strong></td>
+        <td class="${cls}" style="font-size:1.1rem;font-weight:700">${p.stock}</td>
+        <td><span class="pill ${p.stock<=0?'откажана':p.stock<=5?'во-обработка':'испратена'}">${lbl}</span></td>
+        <td style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="adjustStock('${p.id}',-10)">−10</button>
+          <button class="btn btn-ghost btn-sm" onclick="adjustStock('${p.id}',-1)">−1</button>
+          <input id="st-${p.id}" type="number" value="${p.stock}" min="0" style="width:60px;padding:.3rem .4rem;border:1.5px solid var(--border);border-radius:5px;font-size:.85rem"/>
+          <button class="btn btn-green btn-sm" onclick="setStock('${p.id}')">Постави</button>
+          <button class="btn btn-ghost btn-sm" onclick="adjustStock('${p.id}',1)">+1</button>
+          <button class="btn btn-ghost btn-sm" onclick="adjustStock('${p.id}',10)">+10</button>
+        </td>
+      </tr>`;
+  }).join('');
+};
+
+window.adjustStock = async function(id, delta) {
+  const { data: p } = await sb.from('products').select('stock').eq('id',id).single();
+  const newStock = Math.max(0, (p?.stock||0) + delta);
+  await sb.from('products').update({stock:newStock}).eq('id',id);
+  toast(`📦 Залиха: ${newStock}`);
+  loadStock();
+};
+
+window.setStock = async function(id) {
+  const val = parseInt(document.getElementById('st-'+id)?.value)||0;
+  await sb.from('products').update({stock:Math.max(0,val)}).eq('id',id);
+  toast('📦 Залихата е поставена на ' + val);
+  loadStock();
+};
+
+/* ══ NAV ═══════════════════════════════════════════════════ */
+const pages = {
+  dashboard: 'Преглед',
+  orders:    'Нарачки',
+  products:  'Производи',
+  stock:     'Залиха',
+};
+
+window.showPage = function(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sb-link').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+name)?.classList.add('active');
+  document.getElementById('pageTitle').textContent = pages[name]||name;
+  document.querySelectorAll('.sb-link').forEach(b => {
+    if (b.textContent.trim().startsWith(pages[name]?.slice(0,4)||'_')) b.classList.add('active');
+  });
+  closeSidebar();
+};
+
+window.openSidebar  = () => { document.getElementById('sidebar').classList.add('open'); document.getElementById('overlay').classList.add('show'); };
+window.closeSidebar = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); };
+
+/* ══ TOAST ═════════════════════════════════════════════════ */
+function toast(msg) {
+  const t = document.getElementById('adminToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 3000);
+}
+window.toast = toast;
+</script>
+</body>
+</html>
