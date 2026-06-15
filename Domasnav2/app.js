@@ -888,7 +888,7 @@ function injectProductSchema(products) {
           name: p.name,
           description: p.description || '',
           image: p.image_url
-            ? `https://nikola-todorov.github.io/liqour-store/${p.image_url}`
+            ? `https://domasna-apteka.com/${p.image_url}`
             : undefined,
           offers: {
             '@type': 'Offer',
