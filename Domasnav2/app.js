@@ -638,8 +638,9 @@ function initEvents() {
     }
   });
 
-  document.getElementById('cartFab')?.addEventListener('click',  () => Drawer.toggle());
-  document.getElementById('cartTab')?.addEventListener('click',  () => Drawer.toggle());
+  document.getElementById('cartFab')?.addEventListener('click',    () => Drawer.toggle());
+  document.getElementById('navCartBtn')?.addEventListener('click', () => Drawer.toggle());
+  document.getElementById('cartTab')?.addEventListener('click',    () => Drawer.toggle());
   document.getElementById('cartClose')?.addEventListener('click',       () => Drawer.close());
   document.getElementById('cartOverlay')?.addEventListener('click',     () => Drawer.close());
   document.getElementById('cartCheckoutBtn')?.addEventListener('click', () => {
