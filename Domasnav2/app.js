@@ -549,7 +549,7 @@ function initFilters() {
 function validateField(input) {
   const val = input.value.trim();
   let ok = !(input.required && !val);
-  if (ok && input.type === 'tel' && val && !/^\+?[\d\s\-()+]{7,}$/.test(val)) ok = false;
+  if (ok && input.type === 'tel' && val && !/^\+?[\d\s\-()/+]{7,}$/.test(val)) ok = false;
 
   input.classList.toggle('field--invalid', !ok);
   input.classList.toggle('field--valid',   ok && !!val);

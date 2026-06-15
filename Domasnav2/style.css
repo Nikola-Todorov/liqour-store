@@ -1059,6 +1059,8 @@ footer { background: #0f172a; color: #94a3b8; padding: 40px 0 24px; }
 /* ─── Mobile: push content above fixed tab bar ───────────────── */
 @media (max-width: 899px) {
   body { padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px)); }
+  /* Hide cart FAB — tab bar already has a cart button on mobile */
+  .cart-fab { display: none; }
 }
 
 /* ─── Mobile: hero stats tighter on narrow phones ───────────── */

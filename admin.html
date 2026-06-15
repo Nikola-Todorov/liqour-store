@@ -685,7 +685,8 @@ async function loadDashboard() {
   if (!orders || !products) return;
 
   // Stats
-  const totalRev   = orders.reduce((s,o) => s + (o.total_amount||0), 0);
+  const confirmedOrders = orders.filter(o => o.status !== 'нова' && o.status !== 'откажана');
+  const totalRev   = confirmedOrders.reduce((s,o) => s + (o.total_amount||0), 0);
   const newOrders  = orders.filter(o => o.status === 'нова').length;
   const lowStock   = products.filter(p => p.stock > 0 && p.stock <= 5);
   const outOfStock = products.filter(p => p.stock <= 0);
@@ -754,9 +755,9 @@ function buildCharts(orders, products) {
     options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
   });
 
-  // Revenue by product
+  // Revenue by product (confirmed orders only)
   const revByProduct = {};
-  orders.forEach(o => {
+  confirmedOrders.forEach(o => {
     (o.order_items||[]).forEach(i => {
       revByProduct[i.product_name] = (revByProduct[i.product_name]||0) + i.price * i.quantity;
     });
@@ -827,6 +828,17 @@ window.filterOrders = function() {
   ));
 };
 
+async function restoreStock(orderId) {
+  const { data: items } = await sb.from('order_items').select('*').eq('order_id', orderId);
+  if (!items?.length) return;
+  for (const item of items) {
+    if (!item.product_id) continue;
+    const { data: p } = await sb.from('products').select('stock').eq('id', item.product_id).single();
+    await sb.from('products').update({ stock: (p?.stock || 0) + item.quantity }).eq('id', item.product_id);
+  }
+  await sb.from('orders').update({ stock_decremented: false }).eq('id', orderId);
+}
+
 window.updateOrderStatus = async function(id, newStatus) {
   const order = _allOrders.find(o => o.id === id);
 
@@ -851,11 +863,22 @@ window.updateOrderStatus = async function(id, newStatus) {
     }
   }
 
+  // Restore stock if cancelling a confirmed order
+  if (newStatus === 'откажана' && order?.stock_decremented) {
+    await restoreStock(id);
+    if (order) order.stock_decremented = false;
+    toast('❌ Откажано · Залихата е вратена');
+    loadStock();
+    return;
+  }
+
   toast('✅ Статусот е ажуриран');
 };
 
 window.deleteOrder = async function(id) {
   if (!confirm('Да се избрише оваа нарачка?')) return;
+  const order = _allOrders.find(o => o.id === id);
+  if (order?.stock_decremented) await restoreStock(id);
   await sb.from('orders').delete().eq('id',id);
   toast('🗑 Нарачката е избришана');
   loadOrders();
@@ -1243,11 +1266,18 @@ window.approveOrder = async function(id) {
 
 window.rejectOrder = async function(id) {
   if (!confirm('Да се откаже оваа нарачка?')) return;
+  const order = _allOrders.find(o => o.id === id);
   const { error } = await sb.from('orders').update({ status: 'откажана' }).eq('id', id);
   if (error) { toast('❌ Грешка'); return; }
-  const order = _allOrders.find(o => o.id === id);
+  if (order?.stock_decremented) {
+    await restoreStock(id);
+    order.stock_decremented = false;
+    loadStock();
+    toast('❌ Откажано · Залихата е вратена');
+  } else {
+    toast('❌ Нарачката е откажана');
+  }
   if (order) order.status = 'откажана';
-  toast('❌ Нарачката е откажана');
   renderIsporaki();
 };
 
