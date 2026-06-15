@@ -135,18 +135,6 @@ section { padding-block: clamp(60px, 8vw, 100px); }
   padding: 10px 20px 14px;
   border-top: 1px solid #f0f2ff;
 }
-.nav-right {
-  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-}
-.nav-cart-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--brand-light); border: none; border-radius: 50px;
-  padding: .42rem .9rem; color: var(--brand-dark);
-  font-size: .88rem; font-weight: 700; cursor: pointer; line-height: 1;
-  transition: background var(--trans);
-  -webkit-tap-highlight-color: transparent;
-}
-.nav-cart-btn:hover { background: #dde4fd; }
 .nav-social .social-link {
   display: inline-flex; align-items: center; justify-content: center;
   width: var(--nav-icon-size); height: var(--nav-icon-size);
@@ -170,7 +158,6 @@ section { padding-block: clamp(60px, 8vw, 100px); }
   .brand img  { width: 40px; height: 40px; }
   .brand .logo { font-size: 20px; }
   .nav-toggle { display: none; }
-  .nav-cart-btn { display: none; }
   .nav-menu {
     display: flex !important; position: static;
     flex-direction: row; background: transparent;
