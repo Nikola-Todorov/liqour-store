@@ -340,12 +340,18 @@ function showOrderConfirmation(formData, cartItems, total) {
       <a href="${waUrl}" target="_blank" rel="noopener" class="btn-wa">
         💬 Потврди преку WhatsApp
       </a>
+      <button class="btn-continue" id="continueBtn">Продолжи со разгледување →</button>
       <button class="btn-order-again" id="orderAgainBtn">+ Нова нарачка</button>
     </div>`;
 
   formSection.hidden = true;
   confirmEl.hidden   = false;
   confirmEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+  document.getElementById('continueBtn')?.addEventListener('click', () => {
+    confirmEl.hidden = true;
+    document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+  });
 
   document.getElementById('orderAgainBtn')?.addEventListener('click', () => {
     formSection.hidden = false;
@@ -356,11 +362,14 @@ function showOrderConfirmation(formData, cartItems, total) {
 
 // ─── Order status lookup ──────────────────────────────────────
 const STATUS_MAP = {
-  'нова':          { icon: '🕐', cls: 'status--new',       label: 'Нова' },
-  'во обработка':  { icon: '⚙️',  cls: 'status--proc',      label: 'Во обработка' },
-  'испратена':     { icon: '🚚', cls: 'status--shipped',   label: 'Испратена' },
-  'доставена':     { icon: '✅', cls: 'status--delivered', label: 'Доставена' },
-  'откажана':      { icon: '❌', cls: 'status--cancelled', label: 'Откажана' },
+  'нова':           { icon: '🕐', cls: 'status--new',       label: 'Нова' },
+  'во обработка':   { icon: '⚙️',  cls: 'status--proc',      label: 'Во обработка' },
+  'се обработува':  { icon: '⚙️',  cls: 'status--proc',      label: 'Во обработка' },
+  'се пакува':      { icon: '📦', cls: 'status--packing',   label: 'Се пакува' },
+  'испратена':      { icon: '🚚', cls: 'status--shipped',   label: 'Испратена' },
+  'во достава':     { icon: '📍', cls: 'status--transit',   label: 'Во достава' },
+  'доставена':      { icon: '✅', cls: 'status--delivered', label: 'Доставена' },
+  'откажана':       { icon: '❌', cls: 'status--cancelled', label: 'Откажана' },
 };
 
 function initOrderStatus() {
@@ -679,15 +688,23 @@ function initForm() {
             `${p.name} × ${qty}  —  ${(p.price * qty).toLocaleString('mk-MK')} ден`
           ).join('\n');
 
+        const order_items_html = cartItems.map(({ product: p, qty }) => `
+          <tr>
+            <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb">${p.name}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:center">${qty}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:600">${(p.price * qty).toLocaleString('mk-MK')} ден</td>
+          </tr>`).join('');
+
         emailjs.send(EJS.serviceId, EJS.templateId, {
-          from_name:    `${formData.name} ${formData.surname}`,
-          from_phone:   formData.phone,
-          from_city:    formData.city,
-          from_address: formData.address,
+          from_name:        `${formData.name} ${formData.surname}`,
+          from_phone:       formData.phone,
+          from_city:        formData.city,
+          from_address:     formData.address,
           order_items,
-          total:        total.toLocaleString('mk-MK') + ' ден',
-          message:      formData.message || '—',
-          to_email:     EJS.ownerEmail,
+          order_items_html,
+          total:            total.toLocaleString('mk-MK') + ' ден',
+          message:          formData.message || '—',
+          to_email:         EJS.ownerEmail,
         })
         .then(() => console.log('EmailJS: email sent'))
         .catch(err => console.warn('EmailJS error:', err));

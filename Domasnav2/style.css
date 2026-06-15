@@ -688,8 +688,17 @@ button[type="submit"]:disabled { opacity: .6; cursor: not-allowed; box-shadow: n
   border: 2px solid #d1d5db; background: none;
   border-radius: 10px; color: var(--muted); font-size: .9rem;
   cursor: pointer; transition: border-color var(--trans), color var(--trans);
+  margin-top: .5rem;
 }
 .btn-order-again:hover { border-color: var(--brand); color: var(--brand-dark); }
+.btn-continue {
+  display: block; width: 100%; padding: .7rem;
+  border: 2px solid var(--brand-light); background: var(--brand-light);
+  border-radius: 10px; color: var(--brand-dark); font-size: .9rem; font-weight: 600;
+  cursor: pointer; transition: background var(--trans), border-color var(--trans);
+  margin-bottom: .5rem;
+}
+.btn-continue:hover { background: #dde4fd; border-color: var(--brand); }
 
 /* Map */
 .location-info {
