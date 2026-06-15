@@ -1073,50 +1073,96 @@ footer { background: #0f172a; color: #94a3b8; padding: 40px 0 24px; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
 
-/* ─── Mobile: push content above fixed tab bar ───────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   PHONE UX — optimised for mobile ordering
+   ═══════════════════════════════════════════════════════════════ */
+
 @media (max-width: 899px) {
+
+  /* ── Layout: clear fixed tab bar ── */
   body { padding-bottom: calc(62px + env(safe-area-inset-bottom, 0px)); }
-  /* Hide cart FAB — tab bar already has a cart button on mobile */
-  .cart-fab { display: none; }
-}
+  .cart-fab { display: none; } /* tab bar has cart already */
 
-/* ─── Mobile: hero stats tighter on narrow phones ───────────── */
-@media (max-width: 420px) {
-  .hero-stats  { gap: 16px; padding: .7rem .9rem; }
-  .hero-stat strong { font-size: 1.15rem; }
-  .hero-stat span   { font-size: .72rem; }
-}
+  /* ── Hero: shorter so products are one scroll away ── */
+  .hero         { min-height: 72svh; }
+  .hero-btns    { margin-bottom: 1.75rem; }
+  .hero-sub     { margin-bottom: 24px; }
 
-/* ─── Mobile: bigger touch targets for all interactive buttons ── */
-@media (hover: none) {
-  .qty-btn { width: 40px; height: 40px; font-size: 1.1rem; }
-  .ci-btn  { width: 34px; height: 34px; }
-  .c-btn   { width: 38px; height: 38px; font-size: 1.25rem; }
+  /* ── Product cards: squarer images show product better ── */
+  .card .media  { aspect-ratio: 4/3; }
+  .c-slide      { aspect-ratio: 4/3; }
+  .card .body   { padding: 14px 16px; gap: 6px; }
+  .card h3      { font-size: 1.1rem; }
+  .price        { font-size: 1.2rem; }
+
+  /* Add-to-cart: full-width prominent button on all phones */
+  .card-actions { flex-wrap: wrap; gap: 8px; }
+  .btn-add      {
+    flex: 1 1 100%; justify-content: center;
+    padding: 13px 16px; font-size: 1rem; border-radius: 10px;
+  }
+
+  /* ── iOS critical fix: 16px prevents Safari auto-zoom on focus ── */
+  input, textarea, select { font-size: 16px !important; }
+  input, textarea         { padding: 14px 16px; }
+
+  /* ── Order form: bigger submit, map hidden to focus on form ── */
+  button[type="submit"]         { padding: 17px 24px; font-size: 1.05rem; }
+  .contact-wrap > div:last-child { display: none; }
+
+  /* ── Cart: bigger checkout & remove buttons ── */
+  .cart-checkout { padding: 1rem; font-size: 1.05rem; }
+  .ci-remove     { width: 32px; height: 32px; font-size: 1rem; border-radius: 6px; }
+
+  /* ── Tab bar: slightly larger touch targets ── */
+  .tab-item      { padding: 10px 4px 9px; gap: 4px; }
+  .tab-item span { font-size: .68rem; }
+  .tab-item svg  { width: 23px; height: 23px; }
+
+  /* ── Toast: more visible ── */
+  .toast           { font-size: .97rem; padding: .75rem 1.4rem; max-width: 88vw; }
+  .toast-container { bottom: 74px; }
+
+  /* ── Track order: stack button under input ── */
+  .status-lookup { flex-direction: column; }
+  .btn-lookup    { width: 100%; justify-content: center; }
+
+  /* ── Touch targets: all interactive buttons ── */
+  .qty-btn   { width: 40px; height: 40px; font-size: 1.1rem; }
+  .ci-btn    { width: 34px; height: 34px; }
+  .c-btn     { width: 38px; height: 38px; font-size: 1.25rem; }
   .btn-share { width: 40px; height: 40px; }
-  .btn-add { padding: 10px 16px; font-size: .9rem; }
+
+  /* ── About: shorter image on mobile ── */
+  .about-img img { min-height: 220px; }
 }
 
-/* ─── Mobile: add-to-cart stretches to fill action row ────────── */
-@media (max-width: 340px) {
-  .card-actions { flex-wrap: wrap; }
-  .btn-add      { flex: 1 1 100%; justify-content: center; }
-}
-
-/* ─── Mobile: filter toolbar compact on very small screens ────── */
-@media (max-width: 380px) {
-  .filter-group select { flex: 1; min-width: 0; font-size: .85rem; }
-  .stock-toggle span   { font-size: .82rem; }
-}
-
-/* ─── Mobile: category tabs scroll horizontally ───────────────── */
 @media (max-width: 600px) {
+
+  /* ── Section padding: tighter on small phones ── */
+  section        { padding-block: clamp(40px, 7vw, 70px); }
+  .section-title { font-size: clamp(22px, 6vw, 32px); margin-bottom: 18px; }
+
+  /* ── Products toolbar: stack so search gets full width ── */
+  .products-toolbar  { flex-direction: column; align-items: stretch; }
+  .search-wrap       { min-width: unset; }
+  .filter-group      { justify-content: space-between; }
+  .filter-group select { flex: 1; }
+
+  /* ── Category tabs: scroll horizontally ── */
   .category-tabs {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 4px;
+    flex-wrap: nowrap; overflow-x: auto;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 4px;
   }
   .category-tabs::-webkit-scrollbar { display: none; }
   .cat-tab { flex-shrink: 0; }
+
+  /* ── Hero stats: compact on narrow phones ── */
+  .hero-stats    { gap: 16px; padding: .7rem .9rem; }
+  .hero-stat strong { font-size: 1.1rem; }
+  .hero-stat span   { font-size: .7rem; }
+
+  /* ── Filter toolbar on very small screens ── */
+  .filter-group select  { min-width: 0; }
+  .stock-toggle span    { font-size: .82rem; }
 }
