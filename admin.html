@@ -345,11 +345,14 @@ tr:hover td{background:#fafaf8}
   #page-orders table td:nth-child(1),
   #page-orders table th:nth-child(8),
   #page-orders table td:nth-child(8){display:none}
-  /* Hide Badge and Active cols in products table */
-  #page-products table th:nth-child(5),
-  #page-products table td:nth-child(5),
+  /* Hide Badge and Active cols in products table (Слика,Назив,Цена,Чинење,Залиха,Значка,Активен,Акции) */
   #page-products table th:nth-child(6),
-  #page-products table td:nth-child(6){display:none}
+  #page-products table td:nth-child(6),
+  #page-products table th:nth-child(7),
+  #page-products table td:nth-child(7){display:none}
+  /* Hide Note col in batches table */
+  #page-batches table th:nth-child(6),
+  #page-batches table td:nth-child(6){display:none}
   /* Hide Status col in stock table (redundant with colour) */
   #page-stock table th:nth-child(3),
   #page-stock table td:nth-child(3){display:none}
@@ -400,6 +403,9 @@ tr:hover td{background:#fafaf8}
     <button class="sb-link" onclick="showPage('customers')">
       <span class="sb-icon">👥</span> Клиенти
     </button>
+    <button class="sb-link" onclick="showPage('batches')">
+      <span class="sb-icon">🧪</span> Производство
+    </button>
     <a class="sb-link" href="index.html" target="_blank">
       <span class="sb-icon">🌐</span> Продавница
     </a>
@@ -422,6 +428,8 @@ tr:hover td{background:#fafaf8}
       <div class="stat-card"><div class="label">Вкупно нарачки</div><div class="val" id="s-orders">—</div></div>
       <div class="stat-card"><div class="label">Нови нарачки</div><div class="val" id="s-new">—</div></div>
       <div class="stat-card"><div class="label">Вкупен приход</div><div class="val" id="s-revenue">—</div><div class="sub">ден</div></div>
+      <div class="stat-card"><div class="label">Профит</div><div class="val" id="s-profit" style="color:var(--green)">—</div><div class="sub">ден</div></div>
+      <div class="stat-card"><div class="label">Маржа</div><div class="val" id="s-margin" style="color:var(--green)">—</div><div class="sub">%</div></div>
       <div class="stat-card"><div class="label">Производи</div><div class="val" id="s-products">—</div></div>
       <div class="stat-card"><div class="label">Ниска залиха</div><div class="val" id="s-lowstock" style="color:var(--amber)">—</div></div>
     </div>
@@ -495,7 +503,7 @@ tr:hover td{background:#fafaf8}
       </div>
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>Слика</th><th>Назив</th><th>Цена</th><th>Залиха</th><th>Значка</th><th>Активен</th><th>Акции</th></tr></thead>
+          <thead><tr><th>Слика</th><th>Назив</th><th>Цена</th><th>Чинење</th><th>Залиха</th><th>Значка</th><th>Активен</th><th>Акции</th></tr></thead>
           <tbody id="productsBody"><tr><td colspan="7" style="text-align:center;color:#aaa;padding:2rem">Се вчитува…</td></tr></tbody>
         </table>
       </div>
@@ -548,6 +556,23 @@ tr:hover td{background:#fafaf8}
       </div>
     </div>
   </div>
+
+  <!-- ── Производство (Batches) page ── -->
+  <div class="page" id="page-batches">
+    <div class="card-section">
+      <div class="cs-head">
+        <h3>Евиденција на производство</h3>
+        <button class="btn btn-green btn-sm" onclick="openBatchModal()">+ Нова серија</button>
+      </div>
+      <div id="batchSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;padding:1rem 1.25rem;border-bottom:1px solid var(--border)"></div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Дата</th><th>Производ</th><th>Шишиња</th><th>Инвестиција</th><th>Цена / шише</th><th>Напомена</th><th></th></tr></thead>
+          <tbody id="batchesBody"><tr><td colspan="7" style="text-align:center;color:#aaa;padding:2rem">Се вчитува…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ══ PRODUCT MODAL ══════════════════════════════════════════ -->
@@ -591,6 +616,8 @@ tr:hover td{background:#fafaf8}
       <div id="extraImgList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
       <button type="button" onclick="addExtraImgField()" class="btn btn-ghost btn-sm">+ Додај слика</button>
     </div>
+    <div class="form-group"><label>Цена на чинење (ден / шише) <small style="font-weight:400;color:var(--muted)">за пресметка на профит</small></label><input id="pm-cost" type="number" min="0" placeholder="150"/></div>
+    <div class="form-group"><label>Instagram пост линк <small style="font-weight:400;color:var(--muted)">(опционално)</small></label><input id="pm-instagram" placeholder="https://www.instagram.com/p/…"/></div>
     <div class="form-group"><label>Значка</label>
       <select id="pm-badge">
         <option value="">Без значка</option>
@@ -605,6 +632,23 @@ tr:hover td{background:#fafaf8}
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeProductModal()">Откажи</button>
       <button class="btn btn-green" onclick="saveProduct()">💾 Зачувај</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ BATCH MODAL ═══════════════════════════════════════════ -->
+<div class="modal-bg" id="batchModal">
+  <div class="modal">
+    <h3>Нова серија на производство</h3>
+    <input type="hidden" id="bm-id"/>
+    <div class="form-group"><label>Производ *</label><select id="bm-product" style="width:100%;padding:.6rem .8rem;border:1.5px solid var(--border);border-radius:7px;font-size:.9rem;outline:none"></select></div>
+    <div class="form-group"><label>Дата *</label><input type="date" id="bm-date"/></div>
+    <div class="form-group"><label>Произведени шишиња *</label><input type="number" id="bm-bottles" min="1" placeholder="100"/></div>
+    <div class="form-group"><label>Цена на состојки / вложување (ден) *</label><input type="number" id="bm-cost" min="0" placeholder="15000"/></div>
+    <div class="form-group"><label>Напомена</label><textarea id="bm-notes" placeholder="Тип на грозје, серија, специфики…"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeBatchModal()">Откажи</button>
+      <button class="btn btn-green" onclick="saveBatch()">💾 Зачувај</button>
     </div>
   </div>
 </div>
@@ -678,7 +722,7 @@ async function init() {
 /* ══ DASHBOARD ═════════════════════════════════════════════ */
 async function loadDashboard() {
   const [{ data: orders }, { data: products }] = await Promise.all([
-    sb.from('orders').select('id,total_amount,status,created_at,name,surname,phone,order_items(product_name,quantity,price)'),
+    sb.from('orders').select('id,total_amount,status,created_at,name,surname,phone,order_items(product_name,quantity,price,product_id)'),
     sb.from('products').select('*'),
   ]);
 
@@ -691,9 +735,23 @@ async function loadDashboard() {
   const lowStock   = products.filter(p => p.stock > 0 && p.stock <= 5);
   const outOfStock = products.filter(p => p.stock <= 0);
 
+  let totalCost = 0;
+  confirmedOrders.forEach(o => {
+    (o.order_items || []).forEach(item => {
+      const prod = products.find(p => p.id === item.product_id);
+      totalCost += (prod?.cost_per_unit || 0) * item.quantity;
+    });
+  });
+  const profit = totalRev - totalCost;
+  const margin = totalRev > 0 ? Math.round((profit / totalRev) * 100) : 0;
+
   document.getElementById('s-orders').textContent  = orders.length;
   document.getElementById('s-new').textContent      = newOrders;
   document.getElementById('s-revenue').textContent  = totalRev.toLocaleString('mk-MK') + ' ден';
+  document.getElementById('s-profit').textContent   = profit.toLocaleString('mk-MK') + ' ден';
+  document.getElementById('s-profit').style.color   = profit >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('s-margin').textContent   = margin + '%';
+  document.getElementById('s-margin').style.color   = margin >= 0 ? 'var(--green)' : 'var(--red)';
   document.getElementById('s-products').textContent = products.length;
   document.getElementById('s-lowstock').textContent = lowStock.length + outOfStock.length;
 
@@ -930,8 +988,9 @@ function renderProductsTable(products) {
     <tr>
       <td><img class="img-preview" src="${p.image_url||''}" alt="${p.name}"
                onerror="this.style.display='none'"/></td>
-      <td><strong>${p.name}</strong></td>
+      <td><strong>${p.name}</strong>${p.instagram_url?` <a href="${p.instagram_url}" target="_blank" rel="noopener" title="Instagram" style="color:#e1306c;font-size:.8rem">📸</a>`:''}</td>
       <td>${(p.price||0).toLocaleString('mk-MK')} ден</td>
+      <td style="color:var(--muted)">${p.cost_per_unit?p.cost_per_unit.toLocaleString('mk-MK')+' ден':'—'}</td>
       <td class="${p.stock<=0?'stock-none':p.stock<=5?'stock-low':'stock-ok'}">${p.stock}</td>
       <td>${p.badge||'—'}</td>
       <td>${p.active?'✅':'❌'}</td>
@@ -962,7 +1021,9 @@ window.openProductModal = function(id) {
   document.getElementById('pm-desc').value     = p?.description||'';
   document.getElementById('pm-price').value    = p?.price||'';
   document.getElementById('pm-stock').value    = p?.stock||'';
-  document.getElementById('pm-img').value      = p?.image_url||'';
+  document.getElementById('pm-img').value       = p?.image_url||'';
+  document.getElementById('pm-cost').value      = p?.cost_per_unit||'';
+  document.getElementById('pm-instagram').value = p?.instagram_url||'';
   document.getElementById('pm-badge').value    = p?.badge||'';
   document.getElementById('pm-active').checked = p?.active!==false;
 
@@ -984,10 +1045,12 @@ window.saveProduct = async function() {
     description: document.getElementById('pm-desc').value.trim(),
     price:       parseFloat(document.getElementById('pm-price').value)||0,
     stock:       parseInt(document.getElementById('pm-stock').value)||0,
-    image_url:   document.getElementById('pm-img').value.trim(),
-    images:      extraImgs,
-    badge:       document.getElementById('pm-badge').value||null,
-    active:      document.getElementById('pm-active').checked,
+    image_url:     document.getElementById('pm-img').value.trim(),
+    images:        extraImgs,
+    cost_per_unit: parseFloat(document.getElementById('pm-cost').value)||0,
+    instagram_url: document.getElementById('pm-instagram').value.trim()||null,
+    badge:         document.getElementById('pm-badge').value||null,
+    active:        document.getElementById('pm-active').checked,
   };
   if (!data.name) { toast('❌ Внесете назив'); return; }
 
@@ -1060,6 +1123,7 @@ const pages = {
   products:  'Производи',
   stock:     'Залиха',
   customers: 'Клиенти',
+  batches:   'Производство',
 };
 
 window.showPage = function(name) {
@@ -1074,6 +1138,7 @@ window.showPage = function(name) {
   if (name === 'isporaki') loadIsporaki();
   if (name === 'customers') loadCustomers();
   if (name === 'stock') loadStock();
+  if (name === 'batches') loadBatches();
   closeSidebar();
 };
 
@@ -1516,6 +1581,85 @@ window.printPackingSlip = function(id) {
     </button>
   </body></html>`);
   win.document.close();
+};
+
+/* ══ ПРОИЗВОДСТВО (BATCHES) ════════════════════════════════ */
+window.loadBatches = async function() {
+  const { data } = await sb.from('batches')
+    .select('*,products(name)')
+    .order('date', { ascending: false });
+  const batches = data || [];
+
+  const totalBottles  = batches.reduce((s,b) => s + (b.bottles_produced||0), 0);
+  const totalInvested = batches.reduce((s,b) => s + (b.ingredients_cost||0), 0);
+  const avgCost       = totalBottles > 0 ? Math.round(totalInvested / totalBottles) : 0;
+
+  document.getElementById('batchSummary').innerHTML = `
+    <div class="stat-card"><div class="label">Вкупно шишиња</div><div class="val">${totalBottles.toLocaleString('mk-MK')}</div></div>
+    <div class="stat-card"><div class="label">Вкупно вложено</div><div class="val">${totalInvested.toLocaleString('mk-MK')}</div><div class="sub">ден</div></div>
+    <div class="stat-card"><div class="label">Просечна цена/шише</div><div class="val" style="color:var(--amber)">${avgCost.toLocaleString('mk-MK')}</div><div class="sub">ден</div></div>`;
+
+  const tb = document.getElementById('batchesBody');
+  if (!batches.length) {
+    tb.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:2rem">Нема евидентирано производство.</td></tr>';
+    return;
+  }
+  tb.innerHTML = batches.map(b => {
+    const cpp = b.bottles_produced > 0 ? Math.round(b.ingredients_cost / b.bottles_produced) : 0;
+    return `<tr>
+      <td>${new Date(b.date).toLocaleDateString('mk-MK')}</td>
+      <td><strong>${b.products?.name||'—'}</strong></td>
+      <td>${(b.bottles_produced||0).toLocaleString('mk-MK')}</td>
+      <td>${(b.ingredients_cost||0).toLocaleString('mk-MK')} ден</td>
+      <td class="stock-ok">${cpp.toLocaleString('mk-MK')} ден</td>
+      <td style="color:var(--muted);font-size:.85rem">${b.notes||'—'}</td>
+      <td><button class="btn btn-red btn-sm" onclick="deleteBatch('${b.id}')">🗑</button></td>
+    </tr>`;
+  }).join('');
+};
+
+window.openBatchModal = function() {
+  document.getElementById('bm-id').value      = '';
+  document.getElementById('bm-date').value    = new Date().toISOString().slice(0,10);
+  document.getElementById('bm-bottles').value = '';
+  document.getElementById('bm-cost').value    = '';
+  document.getElementById('bm-notes').value   = '';
+  const sel = document.getElementById('bm-product');
+  sel.innerHTML = _allProducts.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+  document.getElementById('batchModal').classList.add('open');
+};
+window.closeBatchModal = () => document.getElementById('batchModal').classList.remove('open');
+
+window.saveBatch = async function() {
+  const productId = document.getElementById('bm-product').value;
+  const bottles   = parseInt(document.getElementById('bm-bottles').value)||0;
+  const cost      = parseFloat(document.getElementById('bm-cost').value)||0;
+  const date      = document.getElementById('bm-date').value;
+  if (!date || bottles < 1) { toast('❌ Пополнете ги задолжителните полиња'); return; }
+
+  const payload = { product_id: productId, date, bottles_produced: bottles, ingredients_cost: cost,
+                    notes: document.getElementById('bm-notes').value.trim()||null };
+  const { error } = await sb.from('batches').insert(payload);
+  if (error) { toast('❌ Грешка: '+error.message); return; }
+
+  // Auto-update cost_per_unit on the product
+  if (productId && bottles > 0) {
+    const cpp = Math.round(cost / bottles);
+    await sb.from('products').update({ cost_per_unit: cpp }).eq('id', productId);
+    const p = _allProducts.find(x => x.id === productId);
+    if (p) p.cost_per_unit = cpp;
+  }
+
+  toast('✅ Серијата е зачувана · Цена на чинење ажурирана');
+  closeBatchModal();
+  loadBatches();
+};
+
+window.deleteBatch = async function(id) {
+  if (!confirm('Да се избрише оваа серија?')) return;
+  await sb.from('batches').delete().eq('id', id);
+  toast('🗑 Серијата е избришана');
+  loadBatches();
 };
 
 /* ══ TOAST ═════════════════════════════════════════════════ */

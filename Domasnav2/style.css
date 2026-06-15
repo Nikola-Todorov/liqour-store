@@ -1037,6 +1037,19 @@ footer { background: #0f172a; color: #94a3b8; padding: 40px 0 24px; }
 /* On mobile always show nav buttons */
 @media (hover: none) { .c-btn { opacity: 1; } }
 
+/* ─── Instagram card link ────────────────────────────────────── */
+.btn-ig-card {
+  width: 34px; height: 34px;
+  border: 1.5px solid #e1306c33;
+  background: linear-gradient(135deg,#feda77,#f58529,#dd2a7b,#8134af,#515bd4);
+  border-radius: var(--radius-sm);
+  display: grid; place-items: center; color: #fff;
+  transition: opacity var(--trans), transform var(--trans);
+  flex-shrink: 0;
+}
+.btn-ig-card:hover { opacity: .85; transform: translateY(-1px); }
+@media (hover: none) { .btn-ig-card { width: 40px; height: 40px; } }
+
 /* ─── Share button ────────────────────────────────────────────── */
 .btn-share {
   width: 34px; height: 34px;
