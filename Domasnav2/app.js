@@ -4,6 +4,14 @@ const SUPABASE_URL  = 'https://oictkykqxzjqaaraxiwc.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9pY3RreWtxeHpqcWFhcmF4aXdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NDQzNjQsImV4cCI6MjA5NzAyMDM2NH0.UedRaA7Ak7tQ7UiCT0VOZK_wb00YxuCcnDBkXrTpP6M';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
+// ─── EmailJS config — replace all 3 values with yours ─────────
+const EJS = {
+  publicKey:  'bJosCOZyzldOZC6UP',
+  serviceId:  'service_9tggop8',
+  templateId: 'template_qk03omh',
+  ownerEmail: 'domasnaapteka@yahoo.com',
+};
+
 // ─── XSS sanitizer ────────────────────────────────────────────
 const S = s => String(s ?? '').replace(/[&<>"']/g, c =>
   ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -155,6 +163,9 @@ const UI = {
             ${out ? 'disabled aria-disabled="true"' : ''}>
             ${out ? 'Нема залиха' : '🛒 Додај'}
           </button>
+          ${'share' in navigator ? `<button class="btn-share" data-action="share" data-id="${S(p.id)}" aria-label="Сподели">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </button>` : ''}
         </div>
       </div>`;
     return art;
@@ -245,7 +256,10 @@ const UI = {
 
   updateCartBadge() {
     const n = Cart.count();
-    document.querySelectorAll('.cart-badge').forEach(b => { b.textContent = n; b.hidden = n === 0; });
+    document.querySelectorAll('.cart-badge, .tab-cart-badge').forEach(b => {
+      b.textContent = n;
+      b.hidden = n === 0;
+    });
   },
 
   toast(msg, type = 'success') {
@@ -549,6 +563,15 @@ function initEvents() {
       if (qtyEl) qtyEl.textContent = '0';
       UI.toast(`${product.name} додаден во кошничката`);
     }
+    if (action === 'share') {
+      const product = State.products.find(p => p.id === id);
+      if (!product) return;
+      navigator.share({
+        title: product.name + ' — Домашна Аптека',
+        text: `${product.name}: ${product.description || ''}\nЦена: ${product.price.toLocaleString('mk-MK')} ден`,
+        url: window.location.href,
+      }).catch(() => {});
+    }
   });
 
   // Cart drawer
@@ -572,7 +595,8 @@ function initEvents() {
     }
   });
 
-  document.getElementById('cartFab')?.addEventListener('click',         () => Drawer.toggle());
+  document.getElementById('cartFab')?.addEventListener('click',  () => Drawer.toggle());
+  document.getElementById('cartTab')?.addEventListener('click',  () => Drawer.toggle());
   document.getElementById('cartClose')?.addEventListener('click',       () => Drawer.close());
   document.getElementById('cartOverlay')?.addEventListener('click',     () => Drawer.close());
   document.getElementById('cartCheckoutBtn')?.addEventListener('click', () => {
@@ -616,6 +640,28 @@ function initForm() {
 
     try {
       await API.submitOrder(formData, cartItems);
+
+      // Send email notification (non-blocking — order is saved regardless)
+      if (window.emailjs && EJS.publicKey !== 'YOUR_PUBLIC_KEY') {
+        emailjs.send(EJS.serviceId, EJS.templateId, {
+          from_name:    `${formData.name} ${formData.surname}`,
+          from_phone:   formData.phone,
+          from_city:    formData.city,
+          from_address: formData.address,
+          orders: cartItems.map(({ product: p, qty }) => ({
+            name:      p.name,
+            units:     qty,
+            price:     (p.price * qty).toLocaleString('mk-MK'),
+            image_url: p.image_url
+              ? `https://nikola-todorov.github.io/liqour-store/${p.image_url}`
+              : '',
+          })),
+          total:    total.toLocaleString('mk-MK') + ' ден',
+          message:  formData.message || '',
+          to_email: EJS.ownerEmail,
+        }).catch(err => console.warn('EmailJS failed (order still saved):', err));
+      }
+
       form.reset();
       form.querySelectorAll('.field--invalid, .field--valid').forEach(el =>
         el.classList.remove('field--invalid', 'field--valid')
@@ -645,6 +691,7 @@ async function loadProducts() {
     State.products = await API.fetchProducts();
     UI.renderCategoryTabs(State.products);
     UI.renderProducts();
+    injectProductSchema(State.products);
   } catch (err) {
     console.error(err);
     grid.innerHTML = `
@@ -658,8 +705,142 @@ async function loadProducts() {
   }
 }
 
+// ─── Scroll reveal ────────────────────────────────────────────
+function initScrollReveal() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const io = new IntersectionObserver((entries, obs) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('revealed');
+      obs.unobserve(e.target);
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+  // Whole sections slide in
+  document.querySelectorAll('section').forEach(el => {
+    el.classList.add('anim-reveal');
+    io.observe(el);
+  });
+  document.querySelectorAll('.about-text, .about-img').forEach(el => {
+    el.classList.add('anim-reveal');
+    io.observe(el);
+  });
+
+  // Grid children stagger
+  document.querySelectorAll(
+    '.testimonials-grid, .services-grid, .gallery-grid, .contact-quick'
+  ).forEach(grid => {
+    [...grid.children].forEach((child, i) => {
+      child.classList.add('anim-reveal', 'anim-stagger');
+      child.style.setProperty('--i', i);
+      io.observe(child);
+    });
+  });
+}
+
+// ─── Animated counter ─────────────────────────────────────────
+function initCounters() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll('.count-up').forEach(el => {
+      el.textContent = el.dataset.count + (el.dataset.suffix || '');
+    });
+    return;
+  }
+  const io = new IntersectionObserver((entries, obs) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      obs.unobserve(e.target);
+      const target   = parseInt(e.target.dataset.count, 10);
+      const suffix   = e.target.dataset.suffix || '';
+      const duration = 1400;
+      const fps      = 60;
+      const steps    = duration / (1000 / fps);
+      let current    = 0;
+      const tick = setInterval(() => {
+        current = Math.min(current + target / steps, target);
+        e.target.textContent = Math.round(current) + suffix;
+        if (current >= target) clearInterval(tick);
+      }, 1000 / fps);
+    });
+  }, { threshold: 0.6 });
+
+  document.querySelectorAll('.count-up').forEach(el => io.observe(el));
+}
+
+// ─── Lightbox ─────────────────────────────────────────────────
+function initLightbox() {
+  const lb    = document.getElementById('lightbox');
+  const img   = document.getElementById('lightboxImg');
+  const close = document.getElementById('lightboxClose');
+  if (!lb) return;
+
+  const open  = (src, alt) => { img.src = src; img.alt = alt; lb.hidden = false; document.body.style.overflow = 'hidden'; img.focus(); };
+  const shut  = ()         => { lb.hidden = true; document.body.style.overflow = ''; };
+
+  document.getElementById('productsGrid')?.addEventListener('click', e => {
+    const i = e.target.closest('.card .media:not(.img-failed) img');
+    if (i?.src) open(i.src, i.alt);
+  });
+  close?.addEventListener('click', shut);
+  lb?.addEventListener('click',    e => { if (e.target === lb) shut(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !lb.hidden) shut(); });
+}
+
+// ─── Tab bar active state ──────────────────────────────────────
+function initTabBar() {
+  const tabs     = document.querySelectorAll('.tab-item[data-section]');
+  const sections = document.querySelectorAll('header[id], section[id]');
+
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      tabs.forEach(t => t.classList.toggle('tab-item--active', t.dataset.section === entry.target.id));
+    });
+  }, { rootMargin: '-40% 0px -40% 0px', threshold: 0 });
+
+  sections.forEach(s => io.observe(s));
+}
+
+// ─── Product schema markup ────────────────────────────────────
+function injectProductSchema(products) {
+  document.getElementById('product-schema')?.remove();
+  const script = Object.assign(document.createElement('script'), {
+    type: 'application/ld+json',
+    id: 'product-schema',
+    textContent: JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      itemListElement: products.filter(p => p.stock > 0).map((p, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        item: {
+          '@type': 'Product',
+          name: p.name,
+          description: p.description || '',
+          image: p.image_url
+            ? `https://nikola-todorov.github.io/liqour-store/${p.image_url}`
+            : undefined,
+          offers: {
+            '@type': 'Offer',
+            price: p.price,
+            priceCurrency: 'MKD',
+            availability: `https://schema.org/${p.stock > 0 ? 'InStock' : 'OutOfStock'}`,
+            seller: { '@type': 'Organization', name: 'Домашна Аптека' },
+          },
+        },
+      })),
+    }),
+  });
+  document.head.appendChild(script);
+}
+
 // ─── Bootstrap ────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  if (window.emailjs && EJS.publicKey !== 'YOUR_PUBLIC_KEY') {
+    emailjs.init({ publicKey: EJS.publicKey });
+  }
+
   Cart.load();
   UI.updateCartBadge();
   initNav();
@@ -668,5 +849,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initEvents();
   initForm();
   initOrderStatus();
+  initScrollReveal();
+  initCounters();
+  initLightbox();
+  initTabBar();
   loadProducts();
 });

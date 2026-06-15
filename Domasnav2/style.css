@@ -514,6 +514,95 @@ section { padding-block: clamp(60px, 8vw, 100px); }
 .contact-item p  { margin: 0; color: var(--muted); font-size: .9rem; }
 .contact-item a  { color: var(--brand); font-weight: 600; text-decoration: underline; }
 
+/* ─── Testimonials ───────────────────────────────────────────── */
+#testimonials { background: var(--surface); }
+
+.testimonials-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.testi-card {
+  background: var(--surface-2);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  position: relative;
+  border: 1px solid #e5e7eb;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: transform var(--trans), box-shadow var(--trans);
+}
+.testi-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.testi-quote {
+  font-size: 3.5rem;
+  line-height: 1;
+  color: var(--brand-accent);
+  font-family: Georgia, serif;
+  margin-bottom: -.5rem;
+}
+
+.testi-text {
+  color: var(--text);
+  font-size: .95rem;
+  line-height: 1.7;
+  margin: 0;
+  flex: 1;
+}
+
+.testi-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-top: .25rem;
+  flex-wrap: wrap;
+}
+
+.testi-stars {
+  color: #f59e0b;
+  font-size: 1.1rem;
+  letter-spacing: 2px;
+}
+
+.testi-author {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+}
+.testi-author strong {
+  font-size: .9rem;
+  color: var(--brand-dark);
+}
+.testi-author span {
+  font-size: .78rem;
+  color: var(--muted);
+}
+
+.testi-product {
+  display: inline-block;
+  align-self: flex-start;
+  background: var(--brand-light);
+  color: var(--brand-dark);
+  border: 1px solid rgba(102,126,234,.2);
+  border-radius: 999px;
+  padding: .25rem .75rem;
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .testimonials-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* ─── Order form + map ──────────────────────────────────────── */
 .contact-wrap { display: grid; gap: 48px; }
 form { display: grid; gap: 14px; }
@@ -805,24 +894,89 @@ footer { background: #0f172a; color: #94a3b8; padding: 40px 0 24px; }
   .footer-links { justify-content: flex-end; }
 }
 
-/* ─── Sticky actions ─────────────────────────────────────────── */
-.sticky-actions {
+/* ─── Mobile tab bar ──────────────────────────────────────────── */
+.tab-bar {
   position: fixed; left: 0; right: 0; bottom: 0;
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;
-  padding: max(8px, env(safe-area-inset-bottom)) 10px calc(8px + env(safe-area-inset-bottom));
-  background: rgba(255,255,255,.96); backdrop-filter: blur(8px);
-  border-top: 1px solid rgba(0,0,0,.06); z-index: 60;
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  background: rgba(255,255,255,.97);
+  backdrop-filter: blur(12px) saturate(180%);
+  border-top: 1px solid rgba(0,0,0,.07);
+  z-index: 60;
+  padding-bottom: env(safe-area-inset-bottom);
 }
-.sticky-actions .act {
+.tab-item {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; padding: 10px 4px 8px;
+  color: var(--muted); font-size: .65rem; font-weight: 600;
+  text-decoration: none; letter-spacing: .02em;
+  border: none; background: none; cursor: pointer;
+  transition: color var(--trans);
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+.tab-item svg { width: 22px; height: 22px; transition: transform var(--trans); }
+.tab-item--active { color: var(--brand); }
+.tab-item--active svg { transform: scale(1.15); }
+.tab-item--cart { position: relative; }
+.tab-cart-wrap { position: relative; display: inline-flex; }
+.tab-cart-badge {
+  position: absolute; top: -6px; right: -8px;
+  background: #e63946; color: #fff;
+  border-radius: 50%; min-width: 17px; height: 17px;
+  font-size: .6rem; font-weight: 800;
   display: inline-flex; align-items: center; justify-content: center;
-  padding: 11px; border-radius: 10px; font-weight: 700;
-  text-decoration: none; color: #fff; font-size: .8rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  padding: 0 3px; border: 2px solid #fff;
 }
-.sticky-actions .call  { background: linear-gradient(135deg, #22c55e, #16a34a); }
-.sticky-actions .order { background: linear-gradient(135deg, var(--brand), var(--brand-dark)); }
-.sticky-actions .wa    { background: linear-gradient(135deg, #25d366, #128c7e); }
-@media (min-width: 900px) { .sticky-actions { display: none; } }
+.tab-cart-badge[hidden] { display: none; }
+@media (min-width: 900px) { .tab-bar { display: none; } }
+
+/* ─── Scroll reveal animations ───────────────────────────────── */
+.anim-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition:
+    opacity  0.55s ease calc(var(--i, 0) * 0.09s),
+    transform 0.55s ease calc(var(--i, 0) * 0.09s);
+}
+.anim-reveal.revealed {
+  opacity: 1;
+  transform: none;
+}
+
+/* ─── Lightbox ────────────────────────────────────────────────── */
+.lightbox {
+  position: fixed; inset: 0; z-index: 2000;
+  background: rgba(0,0,0,.92);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  cursor: zoom-out;
+}
+.lightbox[hidden] { display: none; }
+.lightbox img {
+  max-width: 90vw; max-height: 88vh;
+  object-fit: contain; border-radius: var(--radius-sm);
+  box-shadow: 0 8px 40px rgba(0,0,0,.6);
+  cursor: default;
+}
+.lightbox-close {
+  position: absolute; top: 1rem; right: 1rem;
+  background: rgba(255,255,255,.15); border: none;
+  color: #fff; font-size: 1.5rem; width: 44px; height: 44px;
+  border-radius: 50%; cursor: pointer; display: grid; place-items: center;
+  transition: background var(--trans);
+}
+.lightbox-close:hover { background: rgba(255,255,255,.3); }
+
+/* ─── Share button ────────────────────────────────────────────── */
+.btn-share {
+  width: 34px; height: 34px;
+  border: 1.5px solid #d1d5db; background: var(--surface);
+  border-radius: var(--radius-sm); cursor: pointer;
+  display: grid; place-items: center; color: var(--muted);
+  transition: border-color var(--trans), color var(--trans), background var(--trans);
+  margin-left: auto;
+}
+.btn-share:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-light); }
 
 /* ─── Accessibility ──────────────────────────────────────────── */
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 4px; }

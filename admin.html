@@ -215,6 +215,9 @@ tr:hover td{background:#fafaf8}
     <button class="sb-link" onclick="showPage('stock')">
       <span class="sb-icon">📦</span> Залиха
     </button>
+    <button class="sb-link" onclick="showPage('customers')">
+      <span class="sb-icon">👥</span> Клиенти
+    </button>
     <a class="sb-link" href="index.html" target="_blank">
       <span class="sb-icon">🌐</span> Продавница
     </a>
@@ -312,6 +315,22 @@ tr:hover td{background:#fafaf8}
     </div>
   </div>
 
+  <!-- ── Customers page ── -->
+  <div class="page" id="page-customers">
+    <div class="card-section">
+      <div class="cs-head">
+        <h3>Клиенти</h3>
+        <button class="btn btn-ghost btn-sm" onclick="loadCustomers()">↻ Освежи</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Клиент</th><th>Телефон</th><th>Град</th><th>Нарачки</th><th>Вкупно потрошено</th><th>Последна нарачка</th></tr></thead>
+          <tbody id="customersBody"><tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Се вчитува…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- ── Stock page ── -->
   <div class="page" id="page-stock">
     <div class="card-section">
@@ -338,7 +357,12 @@ tr:hover td{background:#fafaf8}
     <div class="form-group"><label>Опис</label><textarea id="pm-desc" placeholder="Кратка опис на производот…"></textarea></div>
     <div class="form-group"><label>Цена (ден) *</label><input id="pm-price" type="number" min="0" placeholder="800"/></div>
     <div class="form-group"><label>Залиха (количина) *</label><input id="pm-stock" type="number" min="0" placeholder="50"/></div>
-    <div class="form-group"><label>URL на слика</label><input id="pm-img" placeholder="Domasnav2/domasna_apteka/slika.jpg"/></div>
+    <div class="form-group">
+      <label>Слика — прикачи или внеси URL</label>
+      <input type="file" id="pm-img-file" accept="image/*" style="margin-bottom:.4rem"/>
+      <input id="pm-img" placeholder="Domasnav2/domasna_apteka/slika.jpg"/>
+      <small id="pm-img-status" style="color:var(--muted);font-size:.78rem"></small>
+    </div>
     <div class="form-group"><label>Значка</label>
       <select id="pm-badge">
         <option value="">Без значка</option>
@@ -558,6 +582,7 @@ function renderOrders(orders) {
       <td>${new Date(o.created_at).toLocaleDateString('mk-MK')}</td>
       <td>
         <button class="btn btn-ghost btn-sm" onclick="openOrderModal('${o.id}')">👁</button>
+        <button class="btn btn-ghost btn-sm" onclick="printPackingSlip('${o.id}')">📦</button>
         <button class="btn btn-red btn-sm" onclick="deleteOrder('${o.id}')">🗑</button>
       </td>
     </tr>`).join('');
@@ -737,6 +762,7 @@ const pages = {
   orders:    'Нарачки',
   products:  'Производи',
   stock:     'Залиха',
+  customers: 'Клиенти',
 };
 
 window.showPage = function(name) {
@@ -823,6 +849,124 @@ setInterval(async () => {
 if ('Notification' in window && Notification.permission === 'default') {
   Notification.requestPermission();
 }
+
+/* ══ IMAGE UPLOAD ══════════════════════════════════════════ */
+document.getElementById('pm-img-file')?.addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('pm-img-status');
+  status.textContent = '⏳ Се прикачува…';
+
+  const ext  = file.name.split('.').pop();
+  const path = `${Date.now()}.${ext}`;
+
+  const { data, error } = await sb.storage
+    .from('product-images')
+    .upload(path, file, { upsert: true });
+
+  if (error) {
+    status.textContent = '❌ ' + error.message;
+    return;
+  }
+  const { data: { publicUrl } } = sb.storage.from('product-images').getPublicUrl(data.path);
+  document.getElementById('pm-img').value = publicUrl;
+  status.textContent = '✅ Сликата е прикачена';
+});
+
+/* ══ CUSTOMERS ════════════════════════════════════════════ */
+window.loadCustomers = async function() {
+  const tb = document.getElementById('customersBody');
+  tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Се вчитува…</td></tr>';
+
+  const { data: orders } = await sb
+    .from('orders')
+    .select('name,surname,phone,city,total_amount,created_at')
+    .order('created_at', { ascending: false });
+
+  if (!orders?.length) {
+    tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:2rem">Нема клиенти.</td></tr>';
+    return;
+  }
+
+  // Group by phone
+  const map = {};
+  orders.forEach(o => {
+    const key = o.phone;
+    if (!map[key]) map[key] = { name: `${o.name} ${o.surname}`, phone: o.phone, city: o.city, count: 0, total: 0, last: o.created_at };
+    map[key].count++;
+    map[key].total += o.total_amount || 0;
+    if (o.created_at > map[key].last) map[key].last = o.created_at;
+  });
+
+  const customers = Object.values(map).sort((a, b) => b.total - a.total);
+
+  tb.innerHTML = customers.map(c => `
+    <tr>
+      <td><strong>${c.name}</strong></td>
+      <td><a href="tel:${c.phone}" style="color:var(--green)">${c.phone}</a></td>
+      <td>${c.city}</td>
+      <td style="font-weight:700;color:var(--green)">${c.count}</td>
+      <td style="font-weight:700">${c.total.toLocaleString('mk-MK')} ден</td>
+      <td>${new Date(c.last).toLocaleDateString('mk-MK')}</td>
+    </tr>`).join('');
+};
+
+/* ══ PACKING SLIP ══════════════════════════════════════════ */
+window.printPackingSlip = function(id) {
+  const o = _allOrders.find(x => x.id === id);
+  if (!o) return;
+  const items = o.order_items || [];
+  const win = window.open('', '_blank', 'width=420,height=560');
+  win.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8"/>
+    <title>Пакување — ${o.name} ${o.surname}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Courier New',monospace;padding:20px;font-size:13px;color:#111}
+      .header{text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:12px}
+      .header h2{font-size:16px;letter-spacing:.1em}
+      .header small{color:#555;font-size:11px}
+      .to{border:1.5px solid #000;padding:10px;margin-bottom:12px;border-radius:4px}
+      .to h3{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+      .items{width:100%;border-collapse:collapse;margin-bottom:10px}
+      .items th{background:#eee;font-size:11px;padding:5px 6px;text-align:left;border:1px solid #ccc}
+      .items td{padding:5px 6px;border:1px solid #ccc;font-size:12px}
+      .total{text-align:right;font-size:14px;font-weight:700;margin-bottom:12px}
+      .footer{text-align:center;font-size:10px;color:#888;border-top:1px dashed #ccc;padding-top:8px}
+      @media print{.no-print{display:none}}
+    </style>
+  </head><body>
+    <div class="header">
+      <h2>ДОМАШНА АПТЕКА</h2>
+      <small>Пакување за достава · ${new Date(o.created_at).toLocaleDateString('mk-MK')}</small>
+    </div>
+    <div class="to">
+      <h3>📬 До:</h3>
+      <strong>${o.name} ${o.surname}</strong><br/>
+      ${o.address}, ${o.city}<br/>
+      📞 ${o.phone}
+      ${o.message ? `<br/><em>Напомена: ${o.message}</em>` : ''}
+    </div>
+    <table class="items">
+      <thead><tr><th>Производ</th><th>Кол.</th><th>Цена</th></tr></thead>
+      <tbody>
+        ${items.map(i => `<tr>
+          <td>${i.product_name}</td>
+          <td style="text-align:center">${i.quantity}</td>
+          <td style="text-align:right">${(i.price * i.quantity).toLocaleString('mk-MK')} ден</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="total">Вкупно: ${(o.total_amount || 0).toLocaleString('mk-MK')} ден</div>
+    <div class="footer">Домашна Аптека · 072/763-044 · domasnaapteka@yahoo.com</div>
+    <br/>
+    <button class="no-print" onclick="window.print()"
+      style="width:100%;padding:10px;cursor:pointer;font-size:14px;background:#2d6a4f;color:#fff;border:none;border-radius:6px">
+      🖨 Печати
+    </button>
+  </body></html>`);
+  win.document.close();
+};
 
 /* ══ TOAST ═════════════════════════════════════════════════ */
 function toast(msg) {

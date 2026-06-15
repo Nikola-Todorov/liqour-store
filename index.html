@@ -20,6 +20,7 @@
   <meta property="og:url"         content="https://nikola-todorov.github.io/liqour-store/" />
   <meta property="og:image"       content="https://nikola-todorov.github.io/liqour-store/Domasnav2/domasna_apteka/Nazdravje.jpg" />
 
+  <link rel="sitemap" type="application/xml" href="sitemap.xml" />
   <link rel="preload" as="image" href="Domasnav2/domasna_apteka/back_photo_index.jpg" fetchpriority="high" />
   <link rel="stylesheet" href="Domasnav2/style.css" />
 
@@ -130,9 +131,18 @@
         <a class="btn btn--ghost" href="#about">Дознај повеќе</a>
       </div>
       <div class="hero-stats">
-        <div class="hero-stat"><strong>100%</strong><span>Природно</span></div>
-        <div class="hero-stat"><strong>Рачно</strong><span>Правено</span></div>
-        <div class="hero-stat"><strong>Брза</strong><span>Достава</span></div>
+        <div class="hero-stat">
+          <strong class="count-up" data-count="100" data-suffix="%">0%</strong>
+          <span>Природно</span>
+        </div>
+        <div class="hero-stat">
+          <strong class="count-up" data-count="50" data-suffix="+">0+</strong>
+          <span>Задоволни купувачи</span>
+        </div>
+        <div class="hero-stat">
+          <strong class="count-up" data-count="4" data-suffix="">0</strong>
+          <span>Уникатни вкусови</span>
+        </div>
       </div>
     </div>
   </header>
@@ -296,6 +306,69 @@
     </div>
   </section>
 
+  <!-- ═══════════ Testimonials ═══════════ -->
+  <section id="testimonials">
+    <div class="container">
+      <h2 class="section-title">Што велат нашите купувачи</h2>
+      <p class="section-sub">Вистински искуства од луѓе кои го сакаат домашниот вкус.</p>
+      <div class="testimonials-grid">
+
+        <article class="testi-card">
+          <div class="testi-quote">❝</div>
+          <p class="testi-text">Ореовката е неверојатна! Ја нарачав за роденден на мојот татко и беше хит на семејната вечера. Брза достава и убаво спакувано. Дефинитивно ќе нарачам повторно!</p>
+          <div class="testi-footer">
+            <div class="testi-stars" aria-label="5 од 5 ѕвезди">★★★★★</div>
+            <div class="testi-author">
+              <strong>Марија К.</strong>
+              <span>Скопје</span>
+            </div>
+          </div>
+          <div class="testi-product">Ореовка</div>
+        </article>
+
+        <article class="testi-card">
+          <div class="testi-quote">❝</div>
+          <p class="testi-text">Медот од глуварче го земам веќе 6 месеци. Чист, природен вкус — без споредба со она од продавница. Го препорачувам на сите мои пријатели и семејство!</p>
+          <div class="testi-footer">
+            <div class="testi-stars" aria-label="5 од 5 ѕвезди">★★★★★</div>
+            <div class="testi-author">
+              <strong>Стефан Д.</strong>
+              <span>Штип</span>
+            </div>
+          </div>
+          <div class="testi-product">Мед од глуварче</div>
+        </article>
+
+        <article class="testi-card">
+          <div class="testi-quote">❝</div>
+          <p class="testi-text">Вишновката ја земав за свадбата и гостите беа воодушевени. Сите прашуваа каде можат да ја набават. Вкусот е домашен и автентичен — токму она што го баравме.</p>
+          <div class="testi-footer">
+            <div class="testi-stars" aria-label="5 од 5 ѕвезди">★★★★★</div>
+            <div class="testi-author">
+              <strong>Ивана М.</strong>
+              <span>Велес</span>
+            </div>
+          </div>
+          <div class="testi-product">Вишновка</div>
+        </article>
+
+        <article class="testi-card">
+          <div class="testi-quote">❝</div>
+          <p class="testi-text">Нарачав три ликери за Нова Година. Пристигнаа за 2 дена, убаво запакувани. Ореовката и Црешовката се апсолутни фаворити. Домашна Аптека е вистинска реткост!</p>
+          <div class="testi-footer">
+            <div class="testi-stars" aria-label="5 од 5 ѕвезди">★★★★★</div>
+            <div class="testi-author">
+              <strong>Горан Т.</strong>
+              <span>Битола</span>
+            </div>
+          </div>
+          <div class="testi-product">Ореовка + Црешовка</div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
   <!-- ═══════════ Order form & Map ═══════════ -->
   <section class="bg-surface-2">
     <div class="container contact-wrap" id="order">
@@ -404,13 +477,50 @@
     </div>
   </footer>
 
-  <!-- Sticky mobile action bar -->
-  <nav class="sticky-actions" aria-label="Брзи акции">
-    <a class="act call"  href="tel:+38972763044">📞 Повикај</a>
-    <a class="act order" href="#order">🛒 Нарачај</a>
-    <a class="act wa"    href="https://wa.me/38972763044" target="_blank" rel="noopener">💬 WhatsApp</a>
+  <!-- Mobile tab bar -->
+  <nav class="tab-bar" aria-label="Мобилна навигација">
+    <a class="tab-item" href="#home" data-section="home" aria-label="Почетна">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      <span>Почетна</span>
+    </a>
+    <a class="tab-item" href="#products" data-section="products" aria-label="Производи">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      </svg>
+      <span>Производи</span>
+    </a>
+    <button class="tab-item tab-item--cart" id="cartTab" aria-label="Кошничка">
+      <span class="tab-cart-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+        <span class="cart-badge tab-cart-badge" hidden>0</span>
+      </span>
+      <span>Кошничка</span>
+    </button>
+    <a class="tab-item" href="#order" data-section="order" aria-label="Нарачај">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+      </svg>
+      <span>Нарачај</span>
+    </a>
   </nav>
 
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox" hidden role="dialog" aria-modal="true" aria-label="Преглед на слика">
+    <button class="lightbox-close" id="lightboxClose" aria-label="Затвори">✕</button>
+    <img id="lightboxImg" src="" alt="" />
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script type="module" src="Domasnav2/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+  </script>
 </body>
 </html>
