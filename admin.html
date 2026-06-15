@@ -431,6 +431,11 @@ tr:hover td{background:#fafaf8}
       <label style="font-size:.78rem;color:var(--muted);margin-top:8px;display:block;">Или внеси URL директно:</label>
       <input id="pm-img" placeholder="Domasnav2/domasna_apteka/slika.jpg" />
     </div>
+    <div class="form-group">
+      <label>Дополнителни слики <small style="font-weight:400;color:var(--muted)">(прикажани во каруселот)</small></label>
+      <div id="extraImgList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;"></div>
+      <button type="button" onclick="addExtraImgField()" class="btn btn-ghost btn-sm">+ Додај слика</button>
+    </div>
     <div class="form-group"><label>Значка</label>
       <select id="pm-badge">
         <option value="">Без значка</option>
@@ -667,9 +672,31 @@ window.filterOrders = function() {
   ));
 };
 
-window.updateOrderStatus = async function(id, status) {
-  const { error } = await sb.from('orders').update({status}).eq('id',id);
-  if (error) toast('❌ Грешка при ажурирање'); else toast('✅ Статусот е ажуриран');
+window.updateOrderStatus = async function(id, newStatus) {
+  const order = _allOrders.find(o => o.id === id);
+
+  const { error } = await sb.from('orders').update({ status: newStatus }).eq('id', id);
+  if (error) { toast('❌ Грешка при ажурирање'); return; }
+
+  // Decrement stock only once — when admin approves (moves to "во обработка")
+  if (newStatus === 'во обработка' && !order?.stock_decremented) {
+    const { data: items } = await sb
+      .from('order_items').select('*').eq('order_id', id);
+    if (items?.length) {
+      for (const item of items) {
+        if (item.product_id) {
+          await sb.rpc('decrement_stock', { product_id: item.product_id, amount: item.quantity });
+        }
+      }
+      await sb.from('orders').update({ stock_decremented: true }).eq('id', id);
+      if (order) order.stock_decremented = true;
+      toast('✅ Одобрено · Залихата е намалена');
+      loadStock();
+      return;
+    }
+  }
+
+  toast('✅ Статусот е ажуриран');
 };
 
 window.deleteOrder = async function(id) {
@@ -737,29 +764,50 @@ function renderProductsTable(products) {
     </tr>`).join('');
 }
 
+window.addExtraImgField = function(val = '') {
+  const list = document.getElementById('extraImgList');
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;gap:6px;align-items:center;';
+  wrap.innerHTML = `
+    <input class="extra-img-url" value="${val}"
+      placeholder="https://... или Domasnav2/domasna_apteka/slika.jpg"
+      style="flex:1;padding:.5rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-size:.88rem;"/>
+    <button type="button" onclick="this.parentElement.remove()" class="btn btn-red btn-sm" title="Отстрани">✕</button>`;
+  list.appendChild(wrap);
+};
+
 window.openProductModal = function(id) {
   const p = _allProducts.find(x=>x.id===id);
   document.getElementById('productModalTitle').textContent = p ? 'Уреди производ' : 'Додај производ';
-  document.getElementById('pm-id').value      = p?.id||'';
-  document.getElementById('pm-name').value    = p?.name||'';
-  document.getElementById('pm-desc').value    = p?.description||'';
-  document.getElementById('pm-price').value   = p?.price||'';
-  document.getElementById('pm-stock').value   = p?.stock||'';
-  document.getElementById('pm-img').value     = p?.image_url||'';
-  document.getElementById('pm-badge').value   = p?.badge||'';
-  document.getElementById('pm-active').checked= p?.active!==false;
+  document.getElementById('pm-id').value       = p?.id||'';
+  document.getElementById('pm-name').value     = p?.name||'';
+  document.getElementById('pm-desc').value     = p?.description||'';
+  document.getElementById('pm-price').value    = p?.price||'';
+  document.getElementById('pm-stock').value    = p?.stock||'';
+  document.getElementById('pm-img').value      = p?.image_url||'';
+  document.getElementById('pm-badge').value    = p?.badge||'';
+  document.getElementById('pm-active').checked = p?.active!==false;
+
+  // Populate extra images
+  document.getElementById('extraImgList').innerHTML = '';
+  (p?.images || []).forEach(url => addExtraImgField(url));
+
   document.getElementById('productModal').classList.add('open');
 };
 window.closeProductModal = () => document.getElementById('productModal').classList.remove('open');
 
 window.saveProduct = async function() {
   const id    = document.getElementById('pm-id').value;
-  const data  = {
+  const extraImgs = [...document.querySelectorAll('.extra-img-url')]
+    .map(i => i.value.trim()).filter(Boolean);
+
+  const data = {
     name:        document.getElementById('pm-name').value.trim(),
     description: document.getElementById('pm-desc').value.trim(),
     price:       parseFloat(document.getElementById('pm-price').value)||0,
     stock:       parseInt(document.getElementById('pm-stock').value)||0,
     image_url:   document.getElementById('pm-img').value.trim(),
+    images:      extraImgs,
     badge:       document.getElementById('pm-badge').value||null,
     active:      document.getElementById('pm-active').checked,
   };

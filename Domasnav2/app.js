@@ -83,9 +83,7 @@ const API = {
           product_name: p.name, price: p.price, quantity: qty,
         }))
       );
-      for (const { product: p, qty } of cartItems) {
-        await sb.rpc('decrement_stock', { product_id: p.id, amount: qty });
-      }
+      // ⚠️ Stock is NOT decremented here — admin triggers it on approval
     }
     return order;
   },
@@ -118,12 +116,38 @@ const UI = {
   },
 
   _buildCard(p) {
-    const out   = p.stock <= 0;
-    const low   = p.stock > 0 && p.stock <= 5;
-    const vLow  = p.stock > 0 && p.stock <= 2;
-    // Stock bar: only for low stock (≤ 10)
+    const out     = p.stock <= 0;
+    const low     = p.stock > 0 && p.stock <= 5;
+    const vLow    = p.stock > 0 && p.stock <= 2;
     const showBar = p.stock > 0 && p.stock <= 10;
     const barPct  = showBar ? Math.round((p.stock / 10) * 100) : 0;
+
+    // Build image list: primary + extras
+    const allImgs = [
+      ...(p.image_url ? [p.image_url] : []),
+      ...(Array.isArray(p.images) ? p.images : []),
+    ].filter(Boolean);
+    const multi = allImgs.length > 1;
+
+    const mediaHTML = multi ? `
+      <div class="media carousel" data-carousel="${S(p.id)}">
+        <div class="c-track" id="ct-${S(p.id)}">
+          ${allImgs.map(src => `
+            <div class="c-slide">
+              <img src="${S(src)}" alt="${S(p.name)}" loading="lazy" decoding="async"
+                   onerror="this.closest('.c-slide').classList.add('img-failed')" />
+            </div>`).join('')}
+        </div>
+        <button class="c-btn c-btn--prev" data-action="c-prev" data-id="${S(p.id)}" aria-label="Претходна">‹</button>
+        <button class="c-btn c-btn--next" data-action="c-next" data-id="${S(p.id)}" aria-label="Следна">›</button>
+        <div class="c-dots" id="cd-${S(p.id)}">
+          ${allImgs.map((_, i) => `<span class="c-dot${i === 0 ? ' c-dot--on' : ''}"></span>`).join('')}
+        </div>
+      </div>` : `
+      <div class="media">
+        <img src="${S(p.image_url || '')}" alt="${S(p.name)}" loading="lazy" decoding="async"
+             onerror="this.closest('.media').classList.add('img-failed');this.remove()" />
+      </div>`;
 
     const art = document.createElement('article');
     art.className = 'card';
@@ -133,11 +157,7 @@ const UI = {
     art.innerHTML = `
       ${p.badge ? `<div class="badge badge--${p.badge === 'Ново' ? 'new' : 'sale'}">${S(p.badge)}</div>` : ''}
       ${out ? `<div class="badge badge--out">Нема залиха</div>` : ''}
-      <div class="media" data-id="${S(p.id)}">
-        <img src="${S(p.image_url || '')}"
-             alt="${S(p.name)}" loading="lazy" decoding="async"
-             onerror="this.closest('.media').classList.add('img-failed');this.remove()" />
-      </div>
+      ${mediaHTML}
       <div class="body">
         <h3>${S(p.name)}</h3>
         ${p.description ? `<p class="muted">${S(p.description)}</p>` : ''}
@@ -209,6 +229,7 @@ const UI = {
     list.forEach(p => frag.appendChild(this._buildCard(p)));
     grid.innerHTML = '';
     grid.appendChild(frag);
+    initCarousels();
     list.forEach(p => {
       const qty = Cart.getQty(p.id);
       if (qty > 0) { const el = document.getElementById('qty-' + p.id); if (el) el.textContent = qty; }
@@ -552,6 +573,16 @@ function initEvents() {
       const el = document.getElementById('qty-' + id);
       if (el) el.textContent = Math.min(parseInt(el.textContent, 10) + 1, stockN);
     }
+    // Carousel prev/next
+    if (action === 'c-prev' || action === 'c-next') {
+      e.stopPropagation();
+      const track = document.getElementById('ct-' + id);
+      if (!track) return;
+      track.scrollBy({ left: (action === 'c-next' ? 1 : -1) * track.clientWidth, behavior: 'smooth' });
+      setTimeout(() => _updateDots(id, track), 320);
+      return;
+    }
+
     if (action === 'add-to-cart') {
       const qtyEl = document.getElementById('qty-' + id);
       const qty   = parseInt(qtyEl?.textContent || '0', 10);
@@ -703,6 +734,27 @@ async function loadProducts() {
       API.invalidate(); loadProducts();
     });
   }
+}
+
+// ─── Carousel helpers ─────────────────────────────────────────
+function _updateDots(id, track) {
+  const dots = document.querySelectorAll(`#cd-${id} .c-dot`);
+  if (!dots.length) return;
+  const idx = Math.round(track.scrollLeft / track.clientWidth);
+  dots.forEach((d, i) => d.classList.toggle('c-dot--on', i === idx));
+}
+
+function initCarousels() {
+  document.querySelectorAll('[data-carousel]').forEach(carousel => {
+    const id    = carousel.dataset.carousel;
+    const track = document.getElementById('ct-' + id);
+    if (!track) return;
+    // Sync dots on scroll (covers touch swipe natively)
+    track.addEventListener('scroll', () => {
+      clearTimeout(track._dt);
+      track._dt = setTimeout(() => _updateDots(id, track), 80);
+    }, { passive: true });
+  });
 }
 
 // ─── Scroll reveal ────────────────────────────────────────────

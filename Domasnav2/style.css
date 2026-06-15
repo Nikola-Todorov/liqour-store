@@ -967,6 +967,67 @@ footer { background: #0f172a; color: #94a3b8; padding: 40px 0 24px; }
 }
 .lightbox-close:hover { background: rgba(255,255,255,.3); }
 
+/* ─── Product image carousel ─────────────────────────────────── */
+.carousel { position: relative; overflow: hidden; }
+.c-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.c-track::-webkit-scrollbar { display: none; }
+.c-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  aspect-ratio: 16/10;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.c-slide img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s cubic-bezier(.25,.1,.3,1);
+  display: block;
+}
+.card:hover .c-slide img { transform: scale(1.06); }
+.c-slide.img-failed {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.5rem;
+}
+.c-slide.img-failed::after { content: '🍾'; }
+
+/* Prev / Next buttons */
+.c-btn {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,.85); border: none;
+  width: 32px; height: 32px; border-radius: 50%;
+  font-size: 1.1rem; cursor: pointer; z-index: 2;
+  display: grid; place-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  transition: background var(--trans), opacity var(--trans);
+  opacity: 0;
+}
+.carousel:hover .c-btn { opacity: 1; }
+.c-btn--prev { left: 8px; }
+.c-btn--next { right: 8px; }
+.c-btn:hover { background: #fff; }
+
+/* Dots */
+.c-dots {
+  position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 5px; z-index: 2;
+}
+.c-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(255,255,255,.5);
+  transition: background var(--trans), transform var(--trans);
+}
+.c-dot--on { background: #fff; transform: scale(1.3); }
+
+/* On mobile always show nav buttons */
+@media (hover: none) { .c-btn { opacity: 1; } }
+
 /* ─── Share button ────────────────────────────────────────────── */
 .btn-share {
   width: 34px; height: 34px;
