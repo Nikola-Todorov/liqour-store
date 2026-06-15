@@ -1,4 +1,4 @@
-const CACHE = 'da-v2';
+const CACHE = 'da-v3';
 const SHELL = [
   './',
   './index.html',
@@ -34,8 +34,15 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  // Never cache Supabase API or EmailJS calls
-  if (url.hostname.includes('supabase.co') || url.hostname.includes('emailjs.com')) return;
+  // Always pass API calls through — never cache or intercept them
+  if (
+    url.hostname.includes('supabase.co') ||
+    url.hostname.includes('emailjs.com') ||
+    url.hostname.includes('jsdelivr.net')
+  ) {
+    e.respondWith(fetch(e.request));
+    return;
+  }
 
   e.respondWith(
     caches.match(e.request).then(cached => {
