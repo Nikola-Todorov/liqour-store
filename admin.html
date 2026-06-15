@@ -215,6 +215,40 @@ tr:hover td{background:#fafaf8}
 .alert-banner{background:#fffbeb;border:1.5px solid var(--amber);border-radius:var(--radius);
               padding:.75rem 1rem;font-size:.88rem;color:#78350f;display:flex;gap:.5rem;align-items:center}
 
+/* ── Испораки ── */
+.isp-filter-bar{display:flex;gap:.4rem;flex-wrap:wrap;padding:1rem 1.5rem;background:var(--surface);border-bottom:1px solid var(--border);}
+.isp-tab{padding:.35rem .8rem;border-radius:50px;border:1.5px solid var(--border);background:none;font-size:.82rem;cursor:pointer;color:var(--muted);transition:all .15s;white-space:nowrap;}
+.isp-tab:hover{border-color:var(--green);color:var(--green)}
+.isp-tab--active{background:var(--green);border-color:var(--green);color:#fff}
+.isp-list{display:grid;gap:1rem;padding:1.5rem;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));}
+.isp-card{background:var(--surface);border-radius:var(--radius);box-shadow:var(--shadow);border:1px solid var(--border);overflow:hidden;display:flex;flex-direction:column;}
+.isp-card__head{padding:.85rem 1rem .6rem;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.isp-card__name{font-weight:700;font-size:.95rem}
+.isp-card__date{font-size:.75rem;color:var(--muted)}
+.isp-card__body{padding:.75rem 1rem;display:flex;flex-direction:column;gap:.3rem;flex:1}
+.isp-card__contact{font-size:.82rem;color:var(--muted)}
+.isp-card__contact a{color:var(--green);font-weight:600}
+.isp-card__items{font-size:.85rem;color:var(--text);margin:.2rem 0}
+.isp-card__total{font-weight:700;font-size:.95rem;color:var(--green)}
+/* Pipeline bar */
+.isp-pipeline{display:flex;padding:.6rem 1rem;gap:0;background:var(--surface2);border-top:1px solid var(--border)}
+.pipe-step{flex:1;text-align:center;font-size:.6rem;color:#bbb;position:relative;padding-top:18px;}
+.pipe-step::before{content:'';position:absolute;top:6px;left:0;right:0;height:3px;background:#e5e7eb;}
+.pipe-step::after{content:'';position:absolute;top:3px;left:50%;transform:translateX(-50%);width:10px;height:10px;border-radius:50%;background:#e5e7eb;border:2px solid #fff;}
+.pipe-step.done::before,.pipe-step.done::after{background:var(--green-lt)}
+.pipe-step.done{color:var(--green-lt)}
+.pipe-step.curr::after{background:var(--green);box-shadow:0 0 0 3px rgba(45,106,79,.2)}
+.pipe-step.curr{color:var(--green);font-weight:700}
+/* Actions */
+.isp-card__actions{display:flex;gap:.5rem;padding:.75rem 1rem;border-top:1px solid var(--border);flex-wrap:wrap}
+.btn-approve{background:var(--green);color:#fff;border:none;border-radius:6px;padding:.45rem .9rem;font-size:.82rem;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-approve:hover{opacity:.88}
+.btn-reject{background:none;color:var(--red);border:1.5px solid var(--red);border-radius:6px;padding:.45rem .9rem;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-reject:hover{background:var(--red);color:#fff}
+.btn-next{background:var(--amber);color:#fff;border:none;border-radius:6px;padding:.45rem .9rem;font-size:.82rem;font-weight:600;cursor:pointer;transition:opacity .15s;flex:1}
+.btn-next:hover{opacity:.88}
+.isp-empty{text-align:center;color:var(--muted);padding:3rem;grid-column:1/-1}
+
 /* ── Mobile nav toggle ── */
 .mob-menu-btn{display:none;background:none;border:none;cursor:pointer;font-size:1.4rem;color:var(--muted)}
 @media(max-width:768px){
@@ -261,6 +295,10 @@ tr:hover td{background:#fafaf8}
     </button>
     <button class="sb-link" onclick="showPage('stock')">
       <span class="sb-icon">📦</span> Залиха
+    </button>
+    <button class="sb-link" onclick="showPage('isporaki')">
+      <span class="sb-icon">🚚</span> Испораки
+      <span id="newOrdersBadgeIsp" style="background:#e63946;color:#fff;border-radius:50px;padding:.1rem .4rem;font-size:.7rem;margin-left:auto;display:none"></span>
     </button>
     <button class="sb-link" onclick="showPage('customers')">
       <span class="sb-icon">👥</span> Клиенти
@@ -360,6 +398,21 @@ tr:hover td{background:#fafaf8}
         </table>
       </div>
     </div>
+  </div>
+
+  <!-- ── Испораки page ── -->
+  <div class="page" id="page-isporaki">
+    <div class="isp-filter-bar">
+      <button class="isp-tab isp-tab--active" data-filter="нова">🆕 Нови</button>
+      <button class="isp-tab" data-filter="се обработува">⚙️ Обработка</button>
+      <button class="isp-tab" data-filter="се пакува">📦 Пакување</button>
+      <button class="isp-tab" data-filter="испратена">🚚 Испратени</button>
+      <button class="isp-tab" data-filter="во достава">📍 Во достава</button>
+      <button class="isp-tab" data-filter="доставена">✅ Доставени</button>
+      <button class="isp-tab" data-filter="откажана">❌ Откажани</button>
+      <button class="isp-tab" data-filter="all">Сите</button>
+    </div>
+    <div id="isporakiList" class="isp-list"></div>
   </div>
 
   <!-- ── Customers page ── -->
@@ -517,7 +570,7 @@ sb.auth.getSession().then(({ data: { session } }) => {
 
 /* ── Init ──────────────────────────────────────────────────── */
 async function init() {
-  await Promise.all([loadDashboard(), loadOrders(), loadProducts(), loadStock()]);
+  await Promise.all([loadDashboard(), loadOrders(), loadIsporaki(), loadProducts(), loadStock()]);
 }
 
 /* ══ DASHBOARD ═════════════════════════════════════════════ */
@@ -878,6 +931,7 @@ window.setStock = async function(id) {
 const pages = {
   dashboard: 'Преглед',
   orders:    'Нарачки',
+  isporaki:  'Испораки',
   products:  'Производи',
   stock:     'Залиха',
   customers: 'Клиенти',
@@ -887,10 +941,14 @@ window.showPage = function(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sb-link').forEach(b => b.classList.remove('active'));
   document.getElementById('page-'+name)?.classList.add('active');
-  document.getElementById('pageTitle').textContent = pages[name]||name;
+  document.getElementById('pageTitle').textContent = pages[name] || name;
   document.querySelectorAll('.sb-link').forEach(b => {
-    if (b.textContent.trim().startsWith(pages[name]?.slice(0,4)||'_')) b.classList.add('active');
+    if (b.textContent.trim().startsWith(pages[name]?.slice(0,4) || '_')) b.classList.add('active');
   });
+  // Load data for the page
+  if (name === 'isporaki') loadIsporaki();
+  if (name === 'customers') loadCustomers();
+  if (name === 'stock') loadStock();
   closeSidebar();
 };
 
@@ -962,6 +1020,151 @@ setInterval(async () => {
     document.getElementById('s-new').textContent = newCount;
   } catch {}
 }, 60000);
+
+/* ══ ИСПОРАКИ ══════════════════════════════════════════════ */
+const PIPELINE = [
+  { key: 'нова',          label: 'Нова',      icon: '🆕' },
+  { key: 'се обработува', label: 'Обработка', icon: '⚙️' },
+  { key: 'се пакува',     label: 'Пакување',  icon: '📦' },
+  { key: 'испратена',     label: 'Испратена', icon: '🚚' },
+  { key: 'во достава',    label: 'Достава',   icon: '📍' },
+  { key: 'доставена',     label: 'Доставена', icon: '✅' },
+];
+const NEXT_STAGE = {
+  'нова':          'се обработува',
+  'се обработува': 'се пакува',
+  'се пакува':     'испратена',
+  'испратена':     'во достава',
+  'во достава':    'доставена',
+};
+
+let _ispFilter = 'нова';
+
+window.loadIsporaki = async function() {
+  const { data } = await sb.from('orders')
+    .select('*,order_items(product_name,quantity,price)')
+    .order('created_at', { ascending: false });
+  _allOrders = data || [];
+  renderIsporaki();
+
+  // Update badge
+  const newCount = _allOrders.filter(o => o.status === 'нова').length;
+  const badge = document.getElementById('newOrdersBadgeIsp');
+  if (badge) { badge.textContent = newCount; badge.style.display = newCount > 0 ? 'inline' : 'none'; }
+};
+
+function renderIsporaki() {
+  const list = document.getElementById('isporakiList');
+  let orders = _ispFilter === 'all'
+    ? _allOrders
+    : _allOrders.filter(o => o.status === _ispFilter);
+
+  if (!orders.length) {
+    list.innerHTML = `<p class="isp-empty">Нема нарачки со статус "<strong>${_ispFilter === 'all' ? 'сите' : _ispFilter}</strong>".</p>`;
+    return;
+  }
+
+  list.innerHTML = orders.map(o => {
+    const items   = (o.order_items || []).map(i => `${i.product_name} ×${i.quantity}`).join(', ');
+    const pipeIdx = PIPELINE.findIndex(s => s.key === o.status);
+
+    const pipeHTML = PIPELINE.map((s, i) => {
+      const cls = i < pipeIdx ? 'done' : i === pipeIdx ? 'curr' : '';
+      return `<div class="pipe-step ${cls}" title="${s.label}">${s.icon}</div>`;
+    }).join('');
+
+    const actionsHTML = o.status === 'нова' ? `
+      <button class="btn-approve" onclick="approveOrder('${o.id}')">✅ Одобри</button>
+      <button class="btn-reject"  onclick="rejectOrder('${o.id}')">❌ Откажи</button>` :
+      o.status === 'откажана' || o.status === 'доставена' ? `
+      <span style="font-size:.82rem;color:var(--muted)">${o.status === 'доставена' ? '✅ Завршена' : '❌ Откажана'}</span>` : `
+      <button class="btn-next" onclick="nextStage('${o.id}')">→ ${PIPELINE[pipeIdx + 1]?.icon || ''} ${PIPELINE[pipeIdx + 1]?.label || 'Следна'}</button>
+      <button class="btn-reject" onclick="rejectOrder('${o.id}')">❌ Откажи</button>`;
+
+    return `
+      <div class="isp-card" id="isp-${o.id}">
+        <div class="isp-card__head">
+          <div>
+            <div class="isp-card__name">${o.name} ${o.surname}</div>
+          </div>
+          <span class="isp-card__date">${new Date(o.created_at).toLocaleDateString('mk-MK')}</span>
+        </div>
+        <div class="isp-card__body">
+          <div class="isp-card__contact">
+            📞 <a href="tel:${o.phone}">${o.phone}</a> &nbsp;·&nbsp; 📍 ${o.city}
+          </div>
+          <div class="isp-card__items">${items || o.message || '—'}</div>
+          <div class="isp-card__total">${(o.total_amount || 0).toLocaleString('mk-MK')} ден</div>
+        </div>
+        <div class="isp-pipeline">${pipeHTML}</div>
+        <div class="isp-card__actions">${actionsHTML}</div>
+      </div>`;
+  }).join('');
+}
+
+window.approveOrder = async function(id) {
+  const order = _allOrders.find(o => o.id === id);
+  if (!order) return;
+
+  const { error } = await sb.from('orders')
+    .update({ status: 'се обработува' }).eq('id', id);
+  if (error) { toast('❌ Грешка'); return; }
+
+  // Decrement stock on approval
+  if (!order.stock_decremented) {
+    const { data: items } = await sb.from('order_items').select('*').eq('order_id', id);
+    if (items?.length) {
+      for (const item of items) {
+        if (item.product_id) {
+          await sb.rpc('decrement_stock', { product_id: item.product_id, amount: item.quantity });
+        }
+      }
+      await sb.from('orders').update({ stock_decremented: true }).eq('id', id);
+    }
+  }
+
+  order.status = 'се обработува';
+  order.stock_decremented = true;
+  toast('✅ Одобрено · Залихата е намалена');
+  renderIsporaki();
+  loadStock();
+};
+
+window.rejectOrder = async function(id) {
+  if (!confirm('Да се откаже оваа нарачка?')) return;
+  const { error } = await sb.from('orders').update({ status: 'откажана' }).eq('id', id);
+  if (error) { toast('❌ Грешка'); return; }
+  const order = _allOrders.find(o => o.id === id);
+  if (order) order.status = 'откажана';
+  toast('❌ Нарачката е откажана');
+  renderIsporaki();
+};
+
+window.nextStage = async function(id) {
+  const order = _allOrders.find(o => o.id === id);
+  if (!order) return;
+  const next = NEXT_STAGE[order.status];
+  if (!next) return;
+  const { error } = await sb.from('orders').update({ status: next }).eq('id', id);
+  if (error) { toast('❌ Грешка'); return; }
+  order.status = next;
+  const stage = PIPELINE.find(s => s.key === next);
+  toast(`${stage?.icon || ''} ${stage?.label || next}`);
+  renderIsporaki();
+};
+
+// Filter tabs
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('page-isporaki')?.addEventListener('click', e => {
+    const tab = e.target.closest('.isp-tab');
+    if (!tab) return;
+    _ispFilter = tab.dataset.filter;
+    document.querySelectorAll('.isp-tab').forEach(t =>
+      t.classList.toggle('isp-tab--active', t.dataset.filter === _ispFilter)
+    );
+    renderIsporaki();
+  });
+});
 
 // Request notification permission on first load
 if ('Notification' in window && Notification.permission === 'default') {
