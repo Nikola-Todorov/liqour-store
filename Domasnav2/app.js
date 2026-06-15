@@ -9,7 +9,7 @@ const EJS = {
   publicKey:  'bJosCOZyzldOZC6UP',
   serviceId:  'service_9tggop8',
   templateId: 'template_qk03omh',
-  ownerEmail: 'domasnaapteka@yahoo.com',
+  ownerEmail: 'aptekadomasna@yahoo.com',
 };
 
 // ─── XSS sanitizer ────────────────────────────────────────────
@@ -643,23 +643,23 @@ function initForm() {
 
       // Send email notification (non-blocking — order is saved regardless)
       if (window.emailjs && EJS.publicKey !== 'YOUR_PUBLIC_KEY') {
+        const order_items = cartItems
+          .map(({ product: p, qty }) =>
+            `${p.name} × ${qty}  —  ${(p.price * qty).toLocaleString('mk-MK')} ден`
+          ).join('\n');
+
         emailjs.send(EJS.serviceId, EJS.templateId, {
           from_name:    `${formData.name} ${formData.surname}`,
           from_phone:   formData.phone,
           from_city:    formData.city,
           from_address: formData.address,
-          orders: cartItems.map(({ product: p, qty }) => ({
-            name:      p.name,
-            units:     qty,
-            price:     (p.price * qty).toLocaleString('mk-MK'),
-            image_url: p.image_url
-              ? `https://nikola-todorov.github.io/liqour-store/${p.image_url}`
-              : '',
-          })),
-          total:    total.toLocaleString('mk-MK') + ' ден',
-          message:  formData.message || '',
-          to_email: EJS.ownerEmail,
-        }).catch(err => console.warn('EmailJS failed (order still saved):', err));
+          order_items,
+          total:        total.toLocaleString('mk-MK') + ' ден',
+          message:      formData.message || '—',
+          to_email:     EJS.ownerEmail,
+        })
+        .then(() => console.log('EmailJS: email sent'))
+        .catch(err => console.warn('EmailJS error:', err));
       }
 
       form.reset();
