@@ -781,7 +781,7 @@ async function loadDashboard() {
       <td>${new Date(o.created_at).toLocaleDateString('mk-MK')}</td>
     </tr>`).join('');
 
-  buildCharts(orders, products);
+  buildCharts(confirmedOrders, products);
 }
 
 function buildCharts(orders, products) {
@@ -813,9 +813,9 @@ function buildCharts(orders, products) {
     options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}}}}
   });
 
-  // Revenue by product (confirmed orders only)
+  // Revenue by product (confirmed orders only — passed in as `orders` param)
   const revByProduct = {};
-  confirmedOrders.forEach(o => {
+  orders.forEach(o => {
     (o.order_items||[]).forEach(i => {
       revByProduct[i.product_name] = (revByProduct[i.product_name]||0) + i.price * i.quantity;
     });
