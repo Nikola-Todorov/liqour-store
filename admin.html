@@ -996,7 +996,7 @@ window.openOrderModal = function(id) {
       <div><strong>Телефон:</strong> <a href="tel:${o.phone}">${o.phone}</a></div>
       <div><strong>Статус:</strong> <span class="pill ${o.status.replace(' ','-')}">${o.status}</span></div>
       <div><strong>Датум:</strong> ${new Date(o.created_at).toLocaleString('mk-MK')}</div>
-      ${o.source === 'facebook' ? `<div><strong>Извор:</strong> <span class="src-badge facebook">f Facebook</span></div>` : o.source === 'instagram' ? `<div><strong>Извор:</strong> <span class="src-badge instagram">📸 Instagram</span></div>` : ''}
+      ${o.source === 'facebook' ? `<div><strong>Извор:</strong> <span class="src-badge facebook">Facebook</span></div>` : o.source === 'instagram' ? `<div><strong>Извор:</strong> <span class="src-badge instagram">📸 Instagram</span></div>` : ''}
       ${o.message ? `<div><strong>Напомена:</strong> ${(()=>{ const m=o.message.match(/https?:\/\/[^\s\n]+/); return m ? o.message.replace(m[0],`<a href="${m[0]}" target="_blank" rel="noopener" style="color:var(--green);font-weight:600">💬 Отвори разговор →</a>`) : o.message; })()}</div>` : ''}
       ${items.length ? `
         <hr style="border:none;border-top:1px solid var(--border);margin:.25rem 0"/>
