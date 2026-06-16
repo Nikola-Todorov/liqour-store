@@ -478,7 +478,8 @@ tr:hover td{background:#fafaf8}
         <h3>Сите нарачки</h3>
         <div style="display:flex;gap:.5rem;flex-wrap:wrap">
           <button class="btn btn-ghost btn-sm" onclick="exportOrdersCSV()">⬇ CSV</button>
-          <button class="btn btn-green btn-sm" onclick="loadOrders()">↻ Освежи</button>
+          <button class="btn btn-ghost btn-sm" onclick="loadOrders()">↻ Освежи</button>
+          <button class="btn btn-green btn-sm" onclick="openManualOrderModal()">+ Нова нарачка</button>
         </div>
       </div>
       <div class="filter-row">
@@ -705,6 +706,40 @@ tr:hover td{background:#fafaf8}
 </div>
 
 <div id="adminToast"></div>
+
+<!-- ══ MANUAL ORDER MODAL ════════════════════════════════════ -->
+<div class="modal-bg" id="manualOrderModal">
+  <div class="modal">
+    <h3>+ Нова нарачка</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+      <div class="form-group"><label>Име *</label><input id="mo-name" placeholder="Марко"/></div>
+      <div class="form-group"><label>Презиме *</label><input id="mo-surname" placeholder="Петров"/></div>
+    </div>
+    <div class="form-group"><label>Телефон *</label><input id="mo-phone" type="tel" placeholder="070 123 456"/></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">
+      <div class="form-group"><label>Град *</label><input id="mo-city" placeholder="Скопје"/></div>
+      <div class="form-group"><label>Адреса</label><input id="mo-address" placeholder="ул. Македонија 5"/></div>
+    </div>
+    <div class="form-group"><label>Извор</label>
+      <select id="mo-source" style="width:100%;padding:.6rem .8rem;border:1.5px solid var(--border);border-radius:7px;font-size:.9rem">
+        <option value="phone">📞 Телефон</option>
+        <option value="web">🌐 Веб</option>
+        <option value="facebook">💬 Facebook</option>
+        <option value="instagram">📸 Instagram</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Производи *</label>
+      <div id="mo-items" style="display:flex;flex-direction:column;gap:.5rem;margin-bottom:.5rem"></div>
+      <button type="button" onclick="addManualOrderItem()" class="btn btn-ghost btn-sm">+ Додај производ</button>
+    </div>
+    <div class="form-group"><label>Напомена</label><textarea id="mo-message" placeholder="Дополнителни информации…" style="min-height:60px"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeManualOrderModal()">Откажи</button>
+      <button class="btn btn-green" onclick="saveManualOrder()">💾 Зачувај нарачка</button>
+    </div>
+  </div>
+</div>
 
 <!-- ══ SCRIPTS ════════════════════════════════════════════════ -->
 <script type="module">
@@ -1235,30 +1270,100 @@ window.printOrderModal = function() {
   win.document.close();
 };
 
-/* ══ AUTO-REFRESH ══════════════════════════════════════════ */
+/* ══ REAL-TIME ORDERS ══════════════════════════════════════ */
 let _prevNewCount = 0;
-setInterval(async () => {
-  const page = document.querySelector('.page.active')?.id;
-  try {
+
+sb.from('orders').select('id,status').eq('status','нова').then(({ data }) => {
+  _prevNewCount = data?.length || 0;
+});
+
+sb.channel('orders-realtime')
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, async () => {
     const { data } = await sb.from('orders').select('id,status').eq('status','нова');
     const newCount = data?.length || 0;
-    if (newCount > _prevNewCount && _prevNewCount > 0) {
-      toast(`🔔 ${newCount - _prevNewCount} нова нарачка!`);
+    const diff = newCount - _prevNewCount;
+    if (diff > 0) {
+      toast(`🔔 ${diff} нова нарачка пристигна!`);
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification('Домашна Аптека', { body: 'Нова нарачка пристигна!', icon: 'Domasnav2/domasna_apteka/domasna_apteka_zeleno_logo.jpg' });
+        new Notification('Домашна Аптека', { body: `${diff} нова нарачка пристигна!`, icon: 'Domasnav2/domasna_apteka/domasna_apteka_zeleno_logo.jpg' });
       }
     }
     _prevNewCount = newCount;
     const b = document.getElementById('newOrdersBadge');
-    if (b) { b.textContent = newCount; b.style.display = newCount > 0 ? 'inline' : 'none'; }
-    if (page === 'page-dashboard') {
-      document.getElementById('s-new').textContent = newCount;
-    }
-    if (page === 'page-isporaki') {
-      loadIsporaki();
-    }
-  } catch {}
-}, 60000);
+    const bi = document.getElementById('newOrdersBadgeIsp');
+    if (b)  { b.textContent  = newCount; b.style.display  = newCount > 0 ? 'inline' : 'none'; }
+    if (bi) { bi.textContent = newCount; bi.style.display = newCount > 0 ? 'inline' : 'none'; }
+    const page = document.querySelector('.page.active')?.id;
+    if (page === 'page-dashboard') loadDashboard();
+    if (page === 'page-orders')    loadOrders();
+    if (page === 'page-isporaki')  loadIsporaki();
+  })
+  .subscribe();
+
+/* ══ MANUAL ORDER ══════════════════════════════════════════ */
+window.openManualOrderModal = function() {
+  ['mo-name','mo-surname','mo-phone','mo-city','mo-address','mo-message'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('mo-source').value = 'phone';
+  document.getElementById('mo-items').innerHTML = '';
+  addManualOrderItem();
+  document.getElementById('manualOrderModal').classList.add('open');
+};
+
+window.closeManualOrderModal = () => document.getElementById('manualOrderModal').classList.remove('open');
+
+window.addManualOrderItem = function() {
+  const container = document.getElementById('mo-items');
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:.5rem;align-items:center;flex-wrap:wrap';
+  row.innerHTML = `
+    <select class="mo-product" style="flex:2;min-width:160px;padding:.5rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-size:.88rem">
+      ${_allProducts.map(p => `<option value="${p.id}" data-price="${p.price}" data-name="${p.name}">${p.name} — ${(p.price||0).toLocaleString('mk-MK')} ден</option>`).join('')}
+    </select>
+    <input class="mo-qty" type="number" value="1" min="1" style="width:64px;padding:.5rem .6rem;border:1.5px solid var(--border);border-radius:7px;font-size:.88rem"/>
+    <button type="button" onclick="this.parentElement.remove()" class="btn btn-red btn-sm">✕</button>`;
+  container.appendChild(row);
+};
+
+window.saveManualOrder = async function() {
+  const name    = document.getElementById('mo-name').value.trim();
+  const surname = document.getElementById('mo-surname').value.trim();
+  const phone   = document.getElementById('mo-phone').value.trim();
+  const city    = document.getElementById('mo-city').value.trim();
+  const address = document.getElementById('mo-address').value.trim() || '—';
+  const source  = document.getElementById('mo-source').value;
+  const message = document.getElementById('mo-message').value.trim() || null;
+
+  if (!name || !surname || !phone || !city) { toast('❌ Пополнете ги задолжителните полиња'); return; }
+
+  const rows  = document.querySelectorAll('#mo-items > div');
+  const items = [];
+  rows.forEach(row => {
+    const sel = row.querySelector('.mo-product');
+    const qty = parseInt(row.querySelector('.mo-qty').value) || 1;
+    const opt = sel?.selectedOptions[0];
+    if (opt) items.push({ product_id: sel.value, product_name: opt.dataset.name, price: parseFloat(opt.dataset.price), quantity: qty });
+  });
+
+  if (!items.length) { toast('❌ Додајте барем еден производ'); return; }
+
+  const totalAmount = items.reduce((s, i) => s + i.price * i.quantity, 0);
+
+  const { data: order, error } = await sb.from('orders').insert({
+    name, surname, phone, city, address, message, total_amount: totalAmount, source,
+  }).select().single();
+
+  if (error) { toast('❌ Грешка: ' + error.message); return; }
+
+  await sb.from('order_items').insert(
+    items.map(i => ({ order_id: order.id, product_id: i.product_id, product_name: i.product_name, price: i.price, quantity: i.quantity }))
+  );
+
+  toast('✅ Нарачката е зачувана');
+  closeManualOrderModal();
+  loadOrders();
+};
 
 /* ══ ИСПОРАКИ ══════════════════════════════════════════════ */
 const PIPELINE = [
