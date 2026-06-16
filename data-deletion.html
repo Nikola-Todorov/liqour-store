@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Бришење на податоци – Домашна Аптека</title>
+  <link rel="icon" href="Domasnav2/domasna_apteka/domasna_apteka_zeleno_logo.jpg" type="image/jpeg" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand:      #667eea;
+      --brand-dark: #596de0;
+      --brand-light:#eef2ff;
+      --text:       #1f2937;
+      --muted:      #6b7280;
+    }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #fff 0%, #faf7ff 100%);
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+    header {
+      background: var(--brand);
+      color: #fff;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    header img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; }
+    header a { color: #fff; text-decoration: none; font-weight: 700; font-size: 1.15rem; }
+    .container { max-width: 680px; margin: 48px auto; padding: 0 24px 80px; }
+    h1 { font-size: 2rem; font-weight: 800; color: var(--brand-dark); margin-bottom: 6px; }
+    .subtitle { color: var(--muted); margin-bottom: 40px; font-size: 0.95rem; }
+    h2 { font-size: 1.1rem; font-weight: 700; color: var(--brand-dark); margin: 28px 0 8px; }
+    p { margin-bottom: 14px; }
+    .card {
+      background: var(--brand-light);
+      border-left: 4px solid var(--brand);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin: 32px 0;
+    }
+    .card p { margin: 0; }
+    a { color: var(--brand); }
+    .btn {
+      display: inline-block;
+      margin-top: 8px;
+      background: var(--brand);
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .lang-divider { border: none; border-top: 2px solid var(--brand-light); margin: 48px 0; }
+    .badge {
+      display: inline-block;
+      background: var(--brand-light);
+      color: var(--brand-dark);
+      font-size: .78rem;
+      font-weight: 600;
+      border-radius: 999px;
+      padding: 2px 10px;
+      margin-bottom: 28px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="Domasnav2/domasna_apteka/domasna_apteka_zeleno_logo.jpg" alt="Домашна Аптека лого" />
+  <a href="/">Домашна Аптека</a>
+</header>
+
+<div class="container">
+
+  <!-- ═══ МАКЕДОНСКИ ═══ -->
+  <span class="badge">Македонски</span>
+  <h1>Барање за бришење на податоци</h1>
+  <p class="subtitle">Последно ажурирање: јуни 2026</p>
+
+  <p>Доколку сте нарачале преку нашата веб-страница или сте нè контактирале преку Facebook или Instagram, можеме да чуваме следните ваши податоци:</p>
+
+  <ul style="margin: 0 0 16px 20px;">
+    <li>Ime и презиме</li>
+    <li>Адреса за испорака</li>
+    <li>Телефонски број</li>
+    <li>Содржина на пораките со нарачка</li>
+    <li>Facebook / Instagram корисничко ime</li>
+  </ul>
+
+  <p>За да побарате бришење на сите ваши лични податоци, пратете ни e-mail со наслов <strong>„Барање за бришење"</strong> и наведете го вашето ime, телефонски број или корисничко ime со кое сте нарачале. Ќе ги избришеме вашите податоци во рок од <strong>7 работни дена</strong> и ќе ве известиме по e-mail.</p>
+
+  <div class="card">
+    <p>Контакт за бришење на податоци:<br />
+    <strong><a href="mailto:aptekadomasna@yahoo.com?subject=Барање за бришење на податоци">aptekadomasna@yahoo.com</a></strong></p>
+    <a class="btn" href="mailto:aptekadomasna@yahoo.com?subject=Барање за бришење на податоци">Испрати барање</a>
+  </div>
+
+  <hr class="lang-divider" />
+
+  <!-- ═══ ENGLISH ═══ -->
+  <span class="badge">English</span>
+  <h1>Data Deletion Request</h1>
+  <p class="subtitle">Last updated: June 2026</p>
+
+  <p>If you have placed an order on our website or contacted us via Facebook or Instagram, we may hold the following personal data about you:</p>
+
+  <ul style="margin: 0 0 16px 20px;">
+    <li>First and last name</li>
+    <li>Delivery address</li>
+    <li>Phone number</li>
+    <li>Order message content</li>
+    <li>Facebook / Instagram username</li>
+  </ul>
+
+  <p>To request deletion of all your personal data, send us an email with the subject <strong>"Data Deletion Request"</strong> and include your name, phone number, or username used when ordering. We will delete your data within <strong>7 business days</strong> and confirm by email.</p>
+
+  <div class="card">
+    <p>Data deletion contact:<br />
+    <strong><a href="mailto:aptekadomasna@yahoo.com?subject=Data Deletion Request">aptekadomasna@yahoo.com</a></strong></p>
+    <a class="btn" href="mailto:aptekadomasna@yahoo.com?subject=Data Deletion Request">Send request</a>
+  </div>
+
+</div>
+</body>
+</html>
