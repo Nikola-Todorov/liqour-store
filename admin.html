@@ -796,7 +796,7 @@ async function init() {
 /* ══ DASHBOARD ═════════════════════════════════════════════ */
 async function loadDashboard() {
   const [{ data: orders }, { data: products }] = await Promise.all([
-    sb.from('orders').select('id,total_amount,status,created_at,name,surname,phone,order_items(product_name,quantity,price,product_id)'),
+    sb.from('orders').select('id,total_amount,status,created_at,name,surname,phone,source,order_items(product_name,quantity,price,product_id)'),
     sb.from('products').select('*'),
   ]);
 
@@ -847,7 +847,10 @@ async function loadDashboard() {
   const tb = document.getElementById('recentOrdersBody');
   tb.innerHTML = recent.map(o => `
     <tr>
-      <td>${o.name} ${o.surname}</td>
+      <td>
+        ${o.source==='facebook' ? '<span class="src-badge facebook">FB</span> ' : o.source==='instagram' ? '<span class="src-badge instagram">IG</span> ' : ''}
+        ${o.name} ${o.surname}
+      </td>
       <td>${o.phone}</td>
       <td>${(o.order_items||[]).map(i=>`${i.product_name} ×${i.quantity}`).join(', ') || o.message||'—'}</td>
       <td>${(o.total_amount||0).toLocaleString('mk-MK')} ден</td>
@@ -931,7 +934,7 @@ function renderOrders(orders) {
     <tr>
       <td style="color:var(--muted);font-size:.78rem">#${i+1}</td>
       <td>
-        ${o.source==='facebook' ? '<span class="src-badge facebook">f FB</span> ' : o.source==='instagram' ? '<span class="src-badge instagram">📸 IG</span> ' : ''}
+        ${o.source==='facebook' ? '<span class="src-badge facebook">FB</span> ' : o.source==='instagram' ? '<span class="src-badge instagram">IG</span> ' : ''}
         ${o.name} ${o.surname}
       </td>
       <td>${o.city}</td>
