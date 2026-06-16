@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="mk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Политика на приватност – Домашна Аптека</title>
+  <link rel="icon" href="Domasnav2/domasna_apteka/domasna_apteka_zeleno_logo.jpg" type="image/jpeg" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --brand:       #667eea;
+      --brand-dark:  #596de0;
+      --brand-light: #eef2ff;
+      --text:        #1f2937;
+      --muted:       #6b7280;
+      --surface:     #ffffff;
+      --bg:          #faf7ff;
+    }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #fff 0%, var(--bg) 100%);
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+    header {
+      background: var(--brand);
+      color: #fff;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    header img {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    header a {
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.01em;
+    }
+    .container {
+      max-width: 760px;
+      margin: 48px auto;
+      padding: 0 24px 80px;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--brand-dark);
+      margin-bottom: 6px;
+    }
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 40px;
+      font-size: 0.95rem;
+    }
+    .lang-divider {
+      border: none;
+      border-top: 2px solid var(--brand-light);
+      margin: 56px 0;
+    }
+    h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--brand-dark);
+      margin: 32px 0 10px;
+    }
+    p { margin-bottom: 14px; }
+    ul {
+      margin: 0 0 14px 20px;
+    }
+    ul li { margin-bottom: 6px; }
+    a { color: var(--brand); }
+    .badge {
+      display: inline-block;
+      background: var(--brand-light);
+      color: var(--brand-dark);
+      font-size: 0.78rem;
+      font-weight: 600;
+      border-radius: 999px;
+      padding: 2px 10px;
+      margin-bottom: 32px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="Domasnav2/domasna_apteka/domasna_apteka_zeleno_logo.jpg" alt="Домашна Аптека лого" />
+  <a href="/">Домашна Аптека</a>
+</header>
+
+<div class="container">
+
+  <!-- ═══════════════ МАКЕДОНСКИ ═══════════════ -->
+  <span class="badge">Македонски</span>
+  <h1>Политика на приватност</h1>
+  <p class="subtitle">Последно ажурирање: јуни 2026</p>
+
+  <h2>1. Кој ги собира податоците</h2>
+  <p>Домашна Аптека (во натамошниот текст „ние") е онлајн продавница за домашни ликери и мед со седиште во с. Блатец, Македонија. Контакт: <a href="mailto:aptekadomasna@yahoo.com">aptekadomasna@yahoo.com</a></p>
+
+  <h2>2. Кои податоци ги собираме</h2>
+  <p>Собираме само оние податоци кои се неопходни за обработка на нарачки:</p>
+  <ul>
+    <li>Име и презиме</li>
+    <li>Адреса за испорака (град, улица)</li>
+    <li>Телефонски број</li>
+    <li>Содржина на пораки испратени до нашата страница на Facebook или Instagram (само доколку порака содржи нарачка)</li>
+    <li>Корисничко име (username) или профилно ime на Facebook / Instagram на испраќачот</li>
+  </ul>
+
+  <h2>3. Зошто ги собираме</h2>
+  <ul>
+    <li><strong>Обработка на нарачки</strong> — да ги испорачаме производите до точна адреса.</li>
+    <li><strong>Комуникација</strong> — да ве контактираме во врска со статусот на нарачката.</li>
+    <li><strong>Facebook / Instagram интеграција</strong> — нашата апликација ги прима пораките преку Meta Webhooks, ги парсира за да детектира производи, адреса и телефон, и автоматски ја внесува нарачката во системот. Се повикуваме на Instagram Graph API исклучиво за да го добиеме корисничкото име / вистинското ime на испраќачот.</li>
+  </ul>
+
+  <h2>4. Со кого ги споделуваме</h2>
+  <p>Не ги продаваме и не ги споделуваме вашите лични податоци со трети лица, освен:</p>
+  <ul>
+    <li><strong>Supabase</strong> — база на податоци каде се чуваат нарачките (серверот е лоциран во EU).</li>
+    <li><strong>Meta Platforms</strong> — само во мера која е неопходна за приемот на пораки преку Facebook / Instagram Messenger API.</li>
+  </ul>
+
+  <h2>5. Колку долго ги чуваме</h2>
+  <p>Нарачките и поврзаните лични податоци се чуваат до <strong>12 месеци</strong> по датумот на испорака, по што се бришат.</p>
+
+  <h2>6. Вашите права</h2>
+  <p>Имате право да побарате увид, исправка или бришење на вашите лични податоци. Пратете барање на <a href="mailto:aptekadomasna@yahoo.com">aptekadomasna@yahoo.com</a> и ќе одговориме во рок од 7 дена.</p>
+
+  <h2>7. Колачиња (cookies)</h2>
+  <p>Сајтот користи <strong>localStorage</strong> исклучиво за зачувување на содржината на вашата кошничка. Не се користат колачиња за следење или аналитика.</p>
+
+  <h2>8. Промени на политиката</h2>
+  <p>Евентуалните промени ќе бидат објавени на оваа страница со ажуриран датум.</p>
+
+  <hr class="lang-divider" />
+
+  <!-- ═══════════════ ENGLISH ═══════════════ -->
+  <span class="badge">English</span>
+  <h1>Privacy Policy</h1>
+  <p class="subtitle">Last updated: June 2026</p>
+
+  <h2>1. Who collects the data</h2>
+  <p>Domashna Apteka ("we") is an online store for homemade liqueurs and honey, based in Blatec village, North Macedonia. Contact: <a href="mailto:aptekadomasna@yahoo.com">aptekadomasna@yahoo.com</a></p>
+
+  <h2>2. What data we collect</h2>
+  <p>We collect only the data necessary to process orders:</p>
+  <ul>
+    <li>First and last name</li>
+    <li>Delivery address (city, street)</li>
+    <li>Phone number</li>
+    <li>Content of messages sent to our Facebook or Instagram page (only when a message contains an order)</li>
+    <li>The sender's Facebook / Instagram username or display name</li>
+  </ul>
+
+  <h2>3. Why we collect it</h2>
+  <ul>
+    <li><strong>Order fulfillment</strong> — to deliver products to the correct address.</li>
+    <li><strong>Communication</strong> — to contact you regarding your order status.</li>
+    <li><strong>Facebook / Instagram integration</strong> — our app receives messages via Meta Webhooks, parses them to detect products, address, and phone number, and automatically creates an order in our system. We call the Instagram Graph API solely to retrieve the sender's username or real name so the order is linked to the correct person.</li>
+  </ul>
+
+  <h2>4. Who we share it with</h2>
+  <p>We do not sell or share your personal data with third parties, except:</p>
+  <ul>
+    <li><strong>Supabase</strong> — the database where orders are stored (EU-based server).</li>
+    <li><strong>Meta Platforms</strong> — only to the extent required to receive messages through the Facebook / Instagram Messenger API.</li>
+  </ul>
+
+  <h2>5. How long we keep it</h2>
+  <p>Orders and associated personal data are retained for up to <strong>12 months</strong> after the delivery date, after which they are deleted.</p>
+
+  <h2>6. Your rights</h2>
+  <p>You have the right to request access, correction, or deletion of your personal data. Send a request to <a href="mailto:aptekadomasna@yahoo.com">aptekadomasna@yahoo.com</a> and we will respond within 7 days.</p>
+
+  <h2>7. Cookies</h2>
+  <p>The site uses <strong>localStorage</strong> only to save your shopping cart contents. No tracking or analytics cookies are used.</p>
+
+  <h2>8. Changes to this policy</h2>
+  <p>Any changes will be posted on this page with an updated date.</p>
+
+</div>
+</body>
+</html>
