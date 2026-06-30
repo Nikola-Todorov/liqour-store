@@ -4,8 +4,8 @@
   "description": "Домашни ликери и мед. Нарачај онлајн.",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#667eea",
+  "background_color": "#f4ecda",
+  "theme_color": "#1a3022",
   "lang": "mk",
   "icons": [
     {
